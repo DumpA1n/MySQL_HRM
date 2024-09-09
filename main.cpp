@@ -1,10 +1,27 @@
-#include <iostream>
-#include <mysql/jdbc.h>
+#include "main.h"
 
-using namespace std;
-using namespace sql;
+int test();
+
 
 int main() {
+    try {
+        tsql.initialize("tcp://127.0.0.1:3306", "root", "7222");
+
+        EmployeeManager em;
+        em.addEmployee("shabi");
+        em.displayEmployees();
+    } catch (SQLException& e) {
+        cerr << "SQL error: " << e.what() << endl;
+        return 1;
+    }
+
+    getchar();
+    // test();
+    return 0;
+}
+
+
+int test() {
     try {
         // 获取 MySQL 驱动
         mysql::MySQL_Driver* driver = mysql::get_mysql_driver_instance();
