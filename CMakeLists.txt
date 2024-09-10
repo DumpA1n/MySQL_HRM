@@ -16,6 +16,9 @@ set(MySQL_DIR "C:/Program Files/MySQL/MySQL Connector C++ 9.0")
 include_directories(
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/utils
+    ${CMAKE_SOURCE_DIR}/include/imgui
+    ${CMAKE_SOURCE_DIR}/include/imgui/backends
+    ${CMAKE_SOURCE_DIR}/include/imgui/examples/libs/glfw/include
     ${MySQL_DIR}/include
     ${MySQL_DIR}/include/mysql
     ${MySQL_DIR}/include/mysqlx
@@ -24,6 +27,7 @@ include_directories(
 # 指定库文件路径
 link_directories(
     ${MySQL_DIR}/lib64/vs14
+    ${CMAKE_SOURCE_DIR}/include/imgui/examples/libs/glfw/lib-vc2010-64
 )
 
 # 设置所有目标的输出路径
@@ -31,9 +35,18 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib/static)
 
+set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/include/imgui")
+
 # 添加所有源文件
 set(SOURCES
     ${CMAKE_SOURCE_DIR}/main.cpp
+    ${CMAKE_SOURCE_DIR}/include/imgui/imgui.cpp
+    ${CMAKE_SOURCE_DIR}/include/imgui/imgui_demo.cpp
+    ${CMAKE_SOURCE_DIR}/include/imgui/imgui_draw.cpp
+    ${CMAKE_SOURCE_DIR}/include/imgui/imgui_tables.cpp
+    ${CMAKE_SOURCE_DIR}/include/imgui/imgui_widgets.cpp
+    ${CMAKE_SOURCE_DIR}/include/imgui/backends/imgui_impl_glfw.cpp
+    ${CMAKE_SOURCE_DIR}/include/imgui/backends/imgui_impl_opengl3.cpp
 )
 
 # 添加可执行文件
@@ -46,5 +59,5 @@ set_target_properties(MySQL_HRM PROPERTIES
 )
 
 # 链接库文件
-target_link_libraries(MySQL_HRM libssl libcrypto mysqlcppconn mysqlcppconnx)
+target_link_libraries(MySQL_HRM libssl libcrypto mysqlcppconn mysqlcppconnx glfw3 gdi32 opengl32 imm32)
 

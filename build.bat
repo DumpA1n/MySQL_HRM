@@ -35,10 +35,13 @@ echo Build completed successfully!
 :: 返回初始目录
 cd ..
 
-copy build\bin\Release\MySQL_HRM.exe .\
+cd build\bin\Release\
+.\MySQL_HRM.exe
+
+:: copy build\bin\Release\MySQL_HRM.exe .\
 
 :: 等待用户按键，防止窗口自动关闭
-pause
+:: pause
 
 :: 结束脚本
 exit /b 0
