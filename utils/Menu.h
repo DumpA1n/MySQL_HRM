@@ -17,6 +17,20 @@ public:
 
 vector<unique_ptr<sql::ResultSet>> resList;
 vector<string> queryList;
+unordered_map<string, string> translationMap = {
+    {"id", "ID"},
+    {"name", "名称"},
+    {"id_card", "身份证"},
+    {"contact", "联系方式"},
+    {"address", "地址"},
+    {"position", "职位"},
+    {"department", "部门"},
+    {"hire_date", "入职日期"},
+    {"education_background", "教育背景"},
+    {"work_experience", "工作经验"},
+    {"emergency_contact", "紧急联系人"}
+};
+
 
 void GenerateTable(sql::ResultSet* res, int index) {
     string windowName = "SQL Query Results (" + to_string(index) + ")";
@@ -46,7 +60,7 @@ void GenerateTable(sql::ResultSet* res, int index) {
             // 生成表头，获取每一列的名称并创建表头
             ImGui::TableSetupScrollFreeze(freeze_cols, freeze_rows);
             for (int col = 1; col <= colCount; ++col) {
-                ImGui::TableSetupColumn(metaData->getColumnLabel(col).c_str());
+                ImGui::TableSetupColumn(translationMap[metaData->getColumnLabel(col)].c_str());
             }
             ImGui::TableHeadersRow();
 
@@ -84,17 +98,13 @@ void GenerateTable(sql::ResultSet* res, int index) {
     ImGui::End();
 }
 
-void ShowDebugWindow(static string& debuginfo) {
-    static string alldebuginfo;
-    alldebuginfo += debuginfo;
-
+void ShowDebugWindow() {
     ImGui::Begin("Debug Info");
 
     if (ImGui::Button("Clear")) {
-        debuginfo.clear();
-        alldebuginfo.clear();
+        mlog.clear();
     }
-    ImGui::Text(debuginfo.c_str());
+    ImGui::Text(mlog.infoS.c_str());
 
     ImGui::End();
 }
@@ -107,7 +117,9 @@ string buildQuery(const string& field, const string& value, bool& hasCondition, 
                 condition << " AND " << field << " like '%" << value << "%'";
             else condition << " AND " << field << " = '" << value << "'";
         } else {
-            condition << " WHERE " << field << " = '" << value << "'";
+            if (like)
+                condition << " WHERE " << field << " like '%" << value << "%'";
+            else condition << " WHERE " << field << " = '" << value << "'";
             hasCondition = true;
         }
         return condition.str();
@@ -118,8 +130,6 @@ string buildQuery(const string& field, const string& value, bool& hasCondition, 
 void ShowMenu() {
     if (!mgr.init)
         mgr.initialize();
-
-    static string debuginfo;
 
     ImGui::Begin("HRM");
 
@@ -134,12 +144,12 @@ void ShowMenu() {
             static char name[128];
             static char id_card[128];
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
-            ImGui::InputText("名称", name, sizeof(name));
+            ImGui::InputText("名称##name1", name, sizeof(name));
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
-            ImGui::InputText("身份证", id_card, sizeof(id_card));
+            ImGui::InputText("身份证##id_card1", id_card, sizeof(id_card));
             if (ImGui::Button("添加")) {
                 mgr.em->addEmployee(name, id_card);
-                debuginfo += to_string(glfwGetTime()) + " Add Success \n";
+                LOGI("Add Success");
             }
         }
         // #############################################################################
@@ -159,10 +169,10 @@ void ShowMenu() {
             static char emergency_contact[64];
 
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
-            ImGui::InputText("名称", name, sizeof(name));
+            ImGui::InputText("名称##name2", name, sizeof(name));
 
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
-            ImGui::InputText("身份证", id_card, sizeof(id_card));
+            ImGui::InputText("身份证##id_card2", id_card, sizeof(id_card));
 
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
             ImGui::InputText("联系方式", contact, sizeof(contact));
@@ -211,10 +221,10 @@ void ShowMenu() {
                     query += buildQuery("emergency_contact", string(emergency_contact), hasCondition);
                     resList.push_back(std::move(mgr.em->executeQuery(query.c_str())));
                 }
-                debuginfo += "Search Success \n";
+                LOGI("Search Success");
             }
             ImGui::SameLine();
-            if (ImGui::Button("清除")) {
+            if (ImGui::Button("清除所有查询结果")) {
                 resList.clear();
             }
         }
@@ -224,7 +234,7 @@ void ShowMenu() {
             ImGui::InputText("id", id, sizeof(id));
             if (ImGui::Button("移除")) {
                 mgr.em->deleteEmployee(id);
-                debuginfo += "Delete Success: id = " + string(id) + "\n";
+                LOGI("Delete Success: id = " + string(id));
             }
         }
         ImGui::Unindent(30.0f);
@@ -257,7 +267,7 @@ void ShowMenu() {
     for (int i = 0; i < resList.size(); i++) {
         GenerateTable(resList[i].get(), i);
     }
-    ShowDebugWindow(debuginfo);
+    ShowDebugWindow();
     ImGui::End();
 }
 

@@ -88,7 +88,7 @@ public:
                      const string& address = "",
                      const string& position = "", 
                      const string& department = "", 
-                     const string& hire_date = "1900-01-01",
+                     const string& hire_date = "1970-01-01",
                      const string& education_background = "", 
                      const string& work_experience = "", 
                      const string& emergency_contact = "") {
