@@ -7,7 +7,16 @@ project(MySQL_HRM)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 编译选项
+# 针对不同编译器设置编译选项
+if(MSVC)
+    # MSVC 编译器使用 /utf-8 选项确保源文件按 UTF-8 编码解析
+    add_compile_options(/utf-8)
+else()
+    # 对于其他编译器，确保源文件按 UTF-8 编码
+    add_compile_options(-finput-charset=UTF-8 -fexec-charset=UTF-8)
+endif()
+
+# 关闭警告信息
 add_compile_options(-w)
 
 set(MySQL_DIR "C:/Program Files/MySQL/MySQL Connector C++ 9.0")
@@ -60,4 +69,3 @@ set_target_properties(MySQL_HRM PROPERTIES
 
 # 链接库文件
 target_link_libraries(MySQL_HRM libssl libcrypto mysqlcppconn mysqlcppconnx glfw3 gdi32 opengl32 imm32)
-

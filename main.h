@@ -2,6 +2,7 @@
 #ifndef MIAN_H
 #define MIAN_H
 
+#include <sstream>
 #include <unordered_set>
 
 #include "utils/Module.h"

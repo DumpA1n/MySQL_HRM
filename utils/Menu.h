@@ -36,10 +36,10 @@ void GenerateTable(sql::ResultSet* res, int index) {
         ImGui::Begin(windowName.c_str());
 
         // 动态创建表格，根据列数设置表格的列数
-        static ImGuiTableFlags flags = ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Resizable | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
+        static ImGuiTableFlags flags = ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
         static int freeze_cols = 1;
         static int freeze_rows = 1;
-        // ImGui::CheckboxFlags("手动调整宽度", &flags, ImGuiTableFlags_Resizable);
+        ImGui::CheckboxFlags("手动调整列宽度", &flags, ImGuiTableFlags_Resizable);
 
         ImVec2 outer_size = ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * rowCount);
         if (ImGui::BeginTable("SQLTable", colCount, flags, outer_size)) {
@@ -99,6 +99,22 @@ void ShowDebugWindow(static string& debuginfo) {
     ImGui::End();
 }
 
+string buildQuery(const string& field, const string& value, bool& hasCondition, bool like = false) {
+    if (!value.empty()) {
+        std::ostringstream condition;
+        if (hasCondition) {
+            if (like)
+                condition << " AND " << field << " like '%" << value << "%'";
+            else condition << " AND " << field << " = '" << value << "'";
+        } else {
+            condition << " WHERE " << field << " = '" << value << "'";
+            hasCondition = true;
+        }
+        return condition.str();
+    }
+    return "";
+}
+
 void ShowMenu() {
     if (!mgr.init)
         mgr.initialize();
@@ -112,25 +128,89 @@ void ShowMenu() {
     if (ImGui::CollapsingHeader("员工管理"))
     {
         ImGui::Indent(30.0f);
+        // #############################################################################
+        // #############################################################################
         if (ImGui::CollapsingHeader("添加员工")) {
             static char name[128];
             static char id_card[128];
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
             ImGui::InputText("名称", name, sizeof(name));
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
-            ImGui::InputText("身份", id_card, sizeof(id_card));
+            ImGui::InputText("身份证", id_card, sizeof(id_card));
             if (ImGui::Button("添加")) {
                 mgr.em->addEmployee(name, id_card);
-                debuginfo += "Add Success \n";
+                debuginfo += to_string(glfwGetTime()) + " Add Success \n";
             }
         }
+        // #############################################################################
+        // #############################################################################
         if (ImGui::CollapsingHeader("查询员工")) {
-            static char cmd[512] = "select * from Employees";
-            ImGui::InputTextMultiline("", cmd, sizeof(cmd), ImVec2(300.0f, 100.0f));
+            string query = "select * from Employees";
+            bool hasCondition = false;
+            static char name[32];
+            static char id_card[32];
+            static char contact[32];
+            static char address[128];
+            static char position[128];
+            static char department[64];
+            static char hire_date[32];
+            static char education_background[256];
+            static char work_experience[256];
+            static char emergency_contact[64];
+
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+            ImGui::InputText("名称", name, sizeof(name));
+
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+            ImGui::InputText("身份证", id_card, sizeof(id_card));
+
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+            ImGui::InputText("联系方式", contact, sizeof(contact));
+
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+            ImGui::InputText("地址", address, sizeof(address));
+
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+            ImGui::InputText("职位", position, sizeof(position));
+
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+            ImGui::InputText("部门", department, sizeof(department));
+
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+            ImGui::InputText("入职日期", hire_date, sizeof(hire_date));
+
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+            ImGui::InputText("教育背景", education_background, sizeof(education_background));
+
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+            ImGui::InputText("工作经验", work_experience, sizeof(work_experience));
+
+            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
+            ImGui::InputText("紧急联系人", emergency_contact, sizeof(emergency_contact));
+
+            static bool useCustomQuery = false;
+            static char customQuery[1024] = "select * from Employees";
+            ImGui::Checkbox("使用自定义SQL", &useCustomQuery);
+            if (useCustomQuery) {
+                ImGui::SetTooltip("TABLE Employees \nid INT AUTO_INCREMENT PRIMARY KEY \nname VARCHAR(255) \nid_card VARCHAR(20) \ncontact VARCHAR(50) \naddress VARCHAR(255) \nposition VARCHAR(100) \ndepartment VARCHAR(100) \nhire_date DATE \neducation_background TEXT \nwork_experience TEXT \nemergency_contact VARCHAR(255)");
+                ImGui::InputTextMultiline("", customQuery, sizeof(customQuery), ImVec2(300.0f, 100.0f));
+            }
             if (ImGui::Button("查询")) {
-                // mgr.em->displayEmployees();
-                resList.push_back(std::move(mgr.em->executeQuery(cmd)));
-                // resList.push_back(std::move(mgr.em->getEmployees()));
+                if (useCustomQuery) {
+                    resList.push_back(std::move(mgr.em->executeQuery(customQuery)));
+                } else {
+                    query += buildQuery("name", string(name), hasCondition, true);
+                    query += buildQuery("id_card", string(id_card), hasCondition);
+                    query += buildQuery("contact", string(contact), hasCondition);
+                    query += buildQuery("address", string(address), hasCondition);
+                    query += buildQuery("position", string(position), hasCondition);
+                    query += buildQuery("department", string(department), hasCondition);
+                    query += buildQuery("hire_date", string(hire_date), hasCondition);
+                    query += buildQuery("education_background", string(education_background), hasCondition);
+                    query += buildQuery("work_experience", string(work_experience), hasCondition);
+                    query += buildQuery("emergency_contact", string(emergency_contact), hasCondition);
+                    resList.push_back(std::move(mgr.em->executeQuery(query.c_str())));
+                }
                 debuginfo += "Search Success \n";
             }
             ImGui::SameLine();
