@@ -1,12 +1,21 @@
 cmake_minimum_required(VERSION 3.6)
 
+if (WIN32) 
+  set(CMAKE_SYSTEM_NAME Android)
+  set(CMAKE_SYSTEM_VERSION 33)
+  set(ANDROID_PLATFORM 33)
+  set(ANDROID_ABI arm64-v8a)
+  set(ANDROID_NDK "C:/Users/DDD/AppData/Local/Android/Sdk/ndk/25.2.9519653")
+  set(CMAKE_TOOLCHAIN_FILE "${ANDROID_NDK}/build/cmake/android.toolchain.cmake")
+endif()
+
 project(ImGuiExample)
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_library(${CMAKE_PROJECT_NAME} SHARED
+set(SOURCES
   ${CMAKE_CURRENT_SOURCE_DIR}/main.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/../../imgui.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/../../imgui_demo.cpp
@@ -17,6 +26,9 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
   ${CMAKE_CURRENT_SOURCE_DIR}/../../backends/imgui_impl_opengl3.cpp
   ${ANDROID_NDK}/sources/android/native_app_glue/android_native_app_glue.c
 )
+
+# 添加可执行文件
+add_executable(${CMAKE_PROJECT_NAME} ${SOURCES})
 
 set(CMAKE_SHARED_LINKER_FLAGS
   "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate"

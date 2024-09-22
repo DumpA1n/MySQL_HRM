@@ -4,9 +4,15 @@
 
 #include <sstream>
 #include <unordered_set>
+// #include <processthreadsapi.h>
 
 #include "utils/log.h"
-#include "utils/Module.h"
-#include "utils/Menu.h"
+#include "utils/module.h"
+// #include "utils/layout.h"
+#include "utils/menu.h"
+
+bool debugMode = true;
+bool screenResized = false;
+int screenW, screenH;
 
 #endif // MIAN_H

@@ -1,17 +1,25 @@
 #ifndef MENU_H
 #define MENU_H
 
+extern bool debugMode;
+extern bool screenResized;
+extern int screenW;
+extern int screenH;
+
 class Manager
 {
 public:
     bool init = false;
     EmployeeManager* em = nullptr;
+    RecruitmentManager* rm = nullptr;
     void initialize() {
         em = new EmployeeManager();
+        rm = new RecruitmentManager();
         init = true;
     }
     ~Manager() {
         delete em;
+        delete rm;
     }
 } mgr;
 
@@ -28,7 +36,20 @@ unordered_map<string, string> translationMap = {
     {"hire_date", "入职日期"},
     {"education_background", "教育背景"},
     {"work_experience", "工作经验"},
-    {"emergency_contact", "紧急联系人"}
+    {"emergency_contact", "紧急联系人"},
+
+    {"job_id", "职位编号"},
+    {"candidate_name", "姓名"},
+    {"candidate_email", "邮箱"},
+    {"resume", "简历"},
+    {"status", "状态"},
+
+    {"application_id", "简历编号"},
+    {"interview_date", "面试日期"},
+    {"reminder_sent", "是否发送提醒"},
+
+
+    {"", ""}
 };
 
 
@@ -99,6 +120,15 @@ void GenerateTable(sql::ResultSet* res, int index) {
 }
 
 void ShowDebugWindow() {
+    static ImVec2 initial_size = ImVec2(screenW * 1.0f, screenH * 0.2f);
+    static ImVec2 initial_pos = ImVec2(screenW * 0.0f, screenH * 0.8f);
+
+    // if (screenResized) {
+        ImGui::SetNextWindowSize(initial_size);
+        ImGui::SetNextWindowPos(initial_pos);
+    //     screenResized = false;
+    // }
+
     ImGui::Begin("Debug Info");
 
     if (ImGui::Button("Clear")) {
@@ -135,6 +165,7 @@ void ShowMenu() {
 
     if (ImGui::Button("Console Clear")) { system("cls"); }
 
+// #################################################### 员工管理 ####################################################
     if (ImGui::CollapsingHeader("员工管理"))
     {
         ImGui::Indent(30.0f);
@@ -149,7 +180,6 @@ void ShowMenu() {
             ImGui::InputText("身份证##id_card1", id_card, sizeof(id_card));
             if (ImGui::Button("添加")) {
                 mgr.em->addEmployee(name, id_card);
-                LOGI("Add Success");
             }
         }
         // #############################################################################
@@ -234,14 +264,64 @@ void ShowMenu() {
             ImGui::InputText("id", id, sizeof(id));
             if (ImGui::Button("移除")) {
                 mgr.em->deleteEmployee(id);
-                LOGI("Delete Success: id = " + string(id));
             }
         }
         ImGui::Unindent(30.0f);
     }
 
-    if (ImGui::CollapsingHeader("RecruitmentManager"))
-    {
+// #################################################### 招聘与入职管理 ####################################################
+    if (ImGui::CollapsingHeader("招聘与入职管理")) {
+        ImGui::Indent(30.0f);
+        if (debugMode) {
+            if (ImGui::CollapsingHeader("调试功能##招聘与入职管理")) {
+                static int job_id = 1;  // 默认为1号职位
+                ImGui::InputInt("职位编号", &job_id);
+                if (ImGui::Button("随机生成简历")) {
+                    mgr.rm->addRandomApplication(job_id);
+                }
+            }
+        }
+
+        if (ImGui::CollapsingHeader("发布职位")) {
+            static char title[128] = "C++(图形研发)";
+            static char description[1024] = "1、负责移动端3D渲染引擎的功能研究及开发；\n2、参与项目的AR特效开发，特效SDK维护；\n3、对渲染相关技术进行前瞻性研究；";
+            static char requirements[1024] = "1、熟悉OpenGL/OpenGL ES/DirectX/Metal/Vulkan其中一种图形库开发，理解渲染优化策略，熟悉Shader和GLSL；\n2、扎实的C++语言基础，熟悉移动端开发平台环境；\n3、有良好的分析和解决问题能力，逻辑思维清晰严谨。";
+            static char salary_range[64] = "15k ~ 20k";
+            ImGui::InputText("职位标题", title, sizeof(title));
+            ImGui::InputTextMultiline("职位描述", description, sizeof(description), ImVec2(0.0f, 100.0f));
+            ImGui::InputTextMultiline("职位要求", requirements, sizeof(requirements), ImVec2(0.0f, 100.0f));
+            ImGui::InputText("薪资范围", salary_range, sizeof(salary_range));
+            if (ImGui::Button("发布")) {
+                mgr.rm->addJobPost(title, description, requirements, salary_range);
+            }
+            if (ImGui::Button("查看已发布职位")) {
+                mgr.rm->addJobPost(title, description, requirements, salary_range);
+            }
+        }
+
+        if (ImGui::CollapsingHeader("简历筛选")) {
+            static char keyword[128];
+            ImGui::InputText("关键词", keyword, sizeof(keyword));
+            if (ImGui::Button("筛选简历")) {
+                resList.push_back(mgr.rm->autoFilterResumes(keyword));
+            }
+        }
+
+        if (ImGui::CollapsingHeader("面试安排")) {
+            static int application_id;
+            static char interview_date[64];
+            ImGui::InputInt("简历编号", &application_id);
+            ImGui::InputText("面试日期", interview_date, sizeof(interview_date));
+            if (ImGui::Button("安排面试")) {
+                mgr.rm->scheduleInterview(application_id, interview_date);
+            }
+            if (ImGui::Button("查看面试排期")) {
+                static string query = "SELECT * FROM Interviews";
+                resList.push_back(mgr.rm->executeQuery(query));
+            }
+        }
+
+        ImGui::Unindent(30.0f);
     }
 
     if (ImGui::CollapsingHeader("AttendanceManager"))
