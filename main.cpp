@@ -77,7 +77,7 @@ int main(int, char**)
 #endif
 
     // Create window with graphics context
-    GLFWwindow* window = glfwCreateWindow(1280, 720, "Dear ImGui GLFW+OpenGL3 example", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1800, 1000, "Dear ImGui GLFW+OpenGL3 example", nullptr, nullptr);
     if (window == nullptr)
         return 1;
     glfwMakeContextCurrent(window);
@@ -150,6 +150,11 @@ int main(int, char**)
         ImGui_ImplGlfw_NewFrame();
         ImGui::NewFrame();
 
+
+        // login
+        RenderLoginWindow();
+
+
         // 1. Show the big demo window (Most of the sample code is in ImGui::ShowDemoWindow()! You can browse its code to learn more about Dear ImGui!).
         if (show_demo_window)
             ImGui::ShowDemoWindow(&show_demo_window);
@@ -178,13 +183,15 @@ int main(int, char**)
         // }
 
         // 3. Show another simple window.
-        ShowMenu();
+        // ShowMenu();
 
         // Rendering
         ImGui::Render();
         glfwGetWindowSize(window, &screenW, &screenH);
+        // LOGI("screen( %d, %d )", screenW, screenH);
         int display_w, display_h;
         glfwGetFramebufferSize(window, &display_w, &display_h);
+        // LOGI("display( %d, %d )", display_w, display_h);
         glViewport(0, 0, display_w, display_h);
         glClearColor(clear_color.x * clear_color.w, clear_color.y * clear_color.w, clear_color.z * clear_color.w, clear_color.w);
         glClear(GL_COLOR_BUFFER_BIT);

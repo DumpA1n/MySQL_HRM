@@ -7,9 +7,10 @@
 // #include <processthreadsapi.h>
 
 #include "utils/log.h"
-#include "utils/module.h"
-// #include "utils/layout.h"
-#include "utils/menu.h"
+#include "utils/Module.h"
+#include "utils/Layout.h"
+#include "utils/Menu.h"
+#include "utils/LoginMenu.h"
 
 bool debugMode = true;
 bool screenResized = false;

@@ -25,6 +25,8 @@ set(MySQL_DIR "C:/Program Files/MySQL/MySQL Connector C++ 9.0")
 include_directories(
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/utils
+    ${CMAKE_SOURCE_DIR}/Modules
+    ${CMAKE_SOURCE_DIR}/UITables
     ${CMAKE_SOURCE_DIR}/include/imgui
     ${CMAKE_SOURCE_DIR}/include/imgui/backends
     ${CMAKE_SOURCE_DIR}/include/imgui/examples/libs/glfw/include
