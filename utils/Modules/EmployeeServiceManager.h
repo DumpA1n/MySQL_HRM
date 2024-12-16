@@ -43,51 +43,6 @@ public:
         }
     }
 
-    void updateLeaveRequest(int id, const string& start_date, const string& end_date) {
-        try {
-            sql::PreparedStatement* pstmt = tsql.con->prepareStatement(
-                "UPDATE LeaveRequests SET start_date = ?, end_date = ? WHERE id = ?"
-            );
-            pstmt->setString(1, start_date);
-            pstmt->setString(2, end_date);
-            pstmt->setInt(3, id);
-            pstmt->execute();
-            delete pstmt;
-        } catch (sql::SQLException& e) {
-            std::cerr << "Error in updateLeaveRequest: " << e.what() << std::endl;
-        }
-    }
-
-    void deleteLeaveRequest(int id) {
-        try {
-            sql::PreparedStatement* pstmt = tsql.con->prepareStatement(
-                "DELETE FROM LeaveRequests WHERE id = ?"
-            );
-            pstmt->setInt(1, id);
-            pstmt->execute();
-            delete pstmt;
-        } catch (sql::SQLException& e) {
-            std::cerr << "Error in deleteLeaveRequest: " << e.what() << std::endl;
-        }
-    }
-
-    void getLeaveRequests(int employee_id) {
-        try {
-            sql::PreparedStatement* pstmt = tsql.con->prepareStatement(
-                "SELECT * FROM LeaveRequests WHERE employee_id = ?"
-            );
-            pstmt->setInt(1, employee_id);
-            sql::ResultSet* res = pstmt->executeQuery();
-            while (res->next()) {
-                std::cout << "Leave ID: " << res->getInt("id")
-                          << ", Start Date: " << res->getString("start_date")
-                          << ", End Date: " << res->getString("end_date") << std::endl;
-            }
-        } catch (sql::SQLException& e) {
-            std::cerr << "Error in getLeaveRequests: " << e.what() << std::endl;
-        }
-    }
-
     void submitReimbursement(int employee_id, double amount) {
         try {
             sql::PreparedStatement* pstmt = tsql.con->prepareStatement(
@@ -99,19 +54,6 @@ public:
             delete pstmt;
         } catch (sql::SQLException& e) {
             std::cerr << "Error in submitReimbursement: " << e.what() << std::endl;
-        }
-    }
-
-    void deleteReimbursement(int id) {
-        try {
-            sql::PreparedStatement* pstmt = tsql.con->prepareStatement(
-                "DELETE FROM Reimbursements WHERE id = ?"
-            );
-            pstmt->setInt(1, id);
-            pstmt->execute();
-            delete pstmt;
-        } catch (sql::SQLException& e) {
-            std::cerr << "Error in deleteLeaveRequest: " << e.what() << std::endl;
         }
     }
 };

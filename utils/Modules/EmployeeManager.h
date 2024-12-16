@@ -57,7 +57,8 @@ public:
         }
         LOGI("添加成功");
     }
-    void deleteEmployee(int id) {
+
+    void deleteColumn(int id) {
         try {
             // 查询所有依赖于 Employees 表的外键
             std::unique_ptr<sql::PreparedStatement> pstmt(
@@ -68,7 +69,6 @@ public:
                     "AND REFERENCED_COLUMN_NAME = 'id'"
                 )
             );
-
             std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
 
             // 遍历所有依赖的表并删除对应记录

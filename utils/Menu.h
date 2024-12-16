@@ -54,28 +54,18 @@ void ShowMenu() {
             ImGui::Checkbox("使用自定义SQL", &useCustomQuery);
             if (useCustomQuery) {
                 ImGui::SetTooltip("TABLE Employees \nid INT AUTO_INCREMENT PRIMARY KEY \nname VARCHAR(255) \nid_card VARCHAR(20) \ncontact VARCHAR(50) \naddress VARCHAR(255) \nposition VARCHAR(100) \ndepartment VARCHAR(100) \nhire_date DATE \neducation_background TEXT \nwork_experience TEXT \nemergency_contact VARCHAR(255)");
-                ImGui::InputTextMultiline("", customQuery, sizeof(customQuery), ImVec2(300.0f, 100.0f));
+                ImGui::InputTextMultiline("##customQuery1", customQuery, sizeof(customQuery), ImVec2(300.0f, 100.0f));
             }
             if (ImGui::Button("查询")) {
                 if (useCustomQuery) {
-                    resList.push_back(std::move(mgr.emplmgr->executeQuery(customQuery)));
+                    queryResults.push_back(QueryResult(customQuery, "Employees", std::move(mgr.emplmgr->executeQuery(customQuery))));
                 } else {
-                    // query += buildQuery("name", string(name), hasCondition, true);
-                    // query += buildQuery("id_card", string(id_card), hasCondition);
-                    // query += buildQuery("contact", string(contact), hasCondition);
-                    // query += buildQuery("address", string(address), hasCondition);
-                    // query += buildQuery("position", string(position), hasCondition);
-                    // query += buildQuery("department", string(department), hasCondition);
-                    // query += buildQuery("hire_date", string(hire_date), hasCondition);
-                    // query += buildQuery("education_background", string(education_background), hasCondition);
-                    // query += buildQuery("work_experience", string(work_experience), hasCondition);
-                    // query += buildQuery("emergency_contact", string(emergency_contact), hasCondition);
-                    resList.push_back(std::move(mgr.emplmgr->executeQuery(query.c_str())));
+                    queryResults.push_back(QueryResult(query, "Employees", std::move(mgr.emplmgr->executeQuery(query.c_str()))));
                 }
             }
             ImGui::SameLine();
             if (ImGui::Button("清除所有查询结果")) {
-                resList.clear();
+                queryResults.clear();
             }
         }
         if (ImGui::CollapsingHeader("移除员工")) {
@@ -83,7 +73,7 @@ void ShowMenu() {
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
             ImGui::InputText("id", id, sizeof(id));
             if (ImGui::Button("移除")) {
-                mgr.emplmgr->deleteEmployee(stoi(id));
+                mgr.emplmgr->deleteColumn(stoi(id));
             }
         }
         ImGui::Unindent(30.0f);
@@ -131,14 +121,14 @@ void ShowMenu() {
             }
             if (ImGui::Button("查看已发布职位")) {
                 static string query = "SELECT * FROM JobPosts";
-                resList.push_back(std::move(mgr.recumgr->executeQuery(query.c_str())));
+                queryResults.push_back(QueryResult(query, "JobPosts", std::move(mgr.recumgr->executeQuery(query.c_str()))));
             }
         }
 
         if (ImGui::CollapsingHeader("简历查询")) {
             if (ImGui::Button("查询")) {
                 static string query = "select * from Applications";
-                resList.push_back(std::move(mgr.recumgr->executeQuery(query.c_str())));
+                queryResults.push_back(QueryResult(query, "Applications", std::move(mgr.recumgr->executeQuery(query.c_str()))));
             }
         }
 
@@ -152,7 +142,7 @@ void ShowMenu() {
             }
             if (ImGui::Button("查看面试排期")) {
                 static string query = "SELECT * FROM Interviews";
-                resList.push_back(mgr.recumgr->executeQuery(query));
+                queryResults.push_back(QueryResult(query, "Interviews", std::move(mgr.recumgr->executeQuery(query.c_str()))));
             }
         }
 
@@ -192,12 +182,10 @@ void ShowMenu() {
             if (ImGui::Button("记录考勤")) {
                 mgr.attemgr->recordAttendance(stoi(employee_id), attendance_date, status);
             }
-        }
 
-        if (ImGui::CollapsingHeader("考勤查询")) {
-            if (ImGui::Button("查询")) {
+            if (ImGui::Button("查询考勤")) {
                 static string query = "SELECT * FROM Attendance";
-                resList.push_back(std::move(mgr.attemgr->executeQuery(query.c_str())));
+                queryResults.push_back(QueryResult(query, "Attendance", std::move(mgr.attemgr->executeQuery(query.c_str()))));
             }
         }
 
@@ -236,12 +224,10 @@ void ShowMenu() {
             if (ImGui::Button("生成")) {
                 mgr.payrmgr->generatePayroll(stoi(employee_id), month, stod(amount));
             }
-        }
 
-        if (ImGui::CollapsingHeader("查询工资单")) {
             if (ImGui::Button("查询")) {
                 static string query = "SELECT * FROM Payroll";
-                resList.push_back(std::move(mgr.payrmgr->executeQuery(query.c_str())));
+                queryResults.push_back(QueryResult(query, "Payroll", std::move(mgr.payrmgr->executeQuery(query.c_str()))));
             }
         }
 
@@ -284,12 +270,10 @@ void ShowMenu() {
             if (ImGui::Button("提交评估")) {
                 mgr.perfmgr->submitPerformanceReview(stoi(employee_id), review_period, stoi(score));
             }
-        }
 
-        if (ImGui::CollapsingHeader("查询绩效记录")) {
-            if (ImGui::Button("查询")) {
+            if (ImGui::Button("查询评估")) {
                 static string query = "SELECT * FROM Performance";
-                resList.push_back(std::move(mgr.perfmgr->executeQuery(query.c_str())));
+                queryResults.push_back(QueryResult(query, "Performance", std::move(mgr.perfmgr->executeQuery(query.c_str()))));
             }
         }
 
@@ -334,7 +318,7 @@ void ShowMenu() {
         if (ImGui::CollapsingHeader("查询培训课程")) {
             if (ImGui::Button("查询")) {
                 static string query = "SELECT * FROM TrainingCourses";
-                resList.push_back(std::move(mgr.traimgr->executeQuery(query.c_str())));
+                queryResults.push_back(QueryResult(query, "TrainingCourses", std::move(mgr.traimgr->executeQuery(query.c_str()))));
             }
         }
 
@@ -348,12 +332,10 @@ void ShowMenu() {
             if (ImGui::Button("报名")) {
                 mgr.traimgr->enrollInCourse(stoi(employee_id), stoi(course_id));
             }
-        }
 
-        if (ImGui::CollapsingHeader("查询报名情况")) {
             if (ImGui::Button("查询")) {
                 static string query = "SELECT * FROM Enrollments";
-                resList.push_back(std::move(mgr.traimgr->executeQuery(query.c_str())));
+                queryResults.push_back(QueryResult(query, "Enrollments", std::move(mgr.traimgr->executeQuery(query.c_str()))));
             }
         }
 
@@ -396,10 +378,10 @@ void ShowMenu() {
             }
         }
 
-        if (ImGui::CollapsingHeader("查询休假申请")) {
+        if (ImGui::CollapsingHeader("查询申请")) {
             if (ImGui::Button("查询")) {
                 static string query = "SELECT * FROM LeaveRequests";
-                resList.push_back(std::move(mgr.emplsvcmgr->executeQuery(query.c_str())));
+                queryResults.push_back(QueryResult(query, "LeaveRequests", std::move(mgr.emplsvcmgr->executeQuery(query.c_str()))));
             }
         }
 
@@ -412,15 +394,22 @@ void ShowMenu() {
             if (ImGui::Button("提交报销")) {
                 mgr.emplsvcmgr->submitReimbursement(stoi(employee_id), stod(amount));
             }
+            if (ImGui::Button("查询报销")) {
+                static string query = "SELECT * FROM Reimbursements";
+                queryResults.push_back(QueryResult(query, "Reimbursements", std::move(mgr.emplsvcmgr->executeQuery(query.c_str()))));
+            }
         }
 
         ImGui::Unindent(30.0f);
     }
 
+
+
     // for (int i = 0; i < resList.size(); i++) {
     //     GenerateTable(resList[i].get(), i);
     // }
-    GenerateTable(resList);
+    // GenerateTable(resList);
+    GenerateTable(queryResults);
     ShowDebugWindow();
     ImGui::End();
 }
