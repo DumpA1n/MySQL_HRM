@@ -16,7 +16,6 @@ void initializeUsersTable() {
         }
 
         std::unique_ptr<sql::Statement> stmt(tsql.con->createStatement());
-        // 创建 users 表
         stmt->execute("CREATE TABLE IF NOT EXISTS users ("
                      "id INT AUTO_INCREMENT PRIMARY KEY,"
                      "username VARCHAR(255) UNIQUE NOT NULL,"
@@ -24,13 +23,11 @@ void initializeUsersTable() {
                      "role ENUM('admin', 'user') NOT NULL"
                      ") ENGINE=InnoDB;");
 
-        // 检查是否已存在根用户
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(
             "SELECT COUNT(*) AS user_count FROM users WHERE username = 'admin'"));
         res->next();
 
         if (res->getInt("user_count") == 0) {
-            // 插入默认根用户
             std::unique_ptr<sql::PreparedStatement> pstmt(
                 tsql.con->prepareStatement(
                     "INSERT INTO users (username, password, role) VALUES (?, ?, ?)"));
@@ -40,9 +37,9 @@ void initializeUsersTable() {
             pstmt->setString(3, "admin");
             pstmt->execute();
 
-            std::cout << "Default root user created." << std::endl;
+            LOGI("Default root user created.");
         } else {
-            std::cout << "Root user already exists." << std::endl;
+            LOGI("Root user already exists.");
         }
         binitializeUsersTable = true;
     } catch (sql::SQLException& e) {
@@ -85,8 +82,13 @@ void RenderLoginWindow() {
     static std::string loginMessage = "";
     static User loggedInUser;
 
-    ImGui::SetNextWindowSize(ImVec2(screenW * 0.2f, screenH * 0.2f));
-    ImGui::SetNextWindowPos(ImVec2(screenW * 0.0f, screenH * 0.0f));
+    if (isLoggedIn) {
+        ImGui::SetNextWindowSize(ImVec2(screenW * 0.2f, screenH * 0.2f));
+        ImGui::SetNextWindowPos(ImVec2(screenW * 0.0f, screenH * 0.0f));
+    } else {
+        ImGui::SetNextWindowSize(ImVec2(screenW * 0.2f, screenH * 0.2f));
+        ImGui::SetNextWindowPos(ImVec2(screenW * 0.4f, screenH * 0.35f));
+    }
 
     ImGui::Begin("Login");
 

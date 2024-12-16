@@ -57,32 +57,44 @@ public:
         }
         LOGI("添加成功");
     }
-    void deleteEmployee(const string& id = "") {
+    void deleteEmployee(int id) {
         try {
-            sql::PreparedStatement* pstmt;
-            if (id.empty()) {
-                LOGE("移除失败: id不能为空");
-                return;
+            // 查询所有依赖于 Employees 表的外键
+            std::unique_ptr<sql::PreparedStatement> pstmt(
+                tsql.con->prepareStatement(
+                    "SELECT TABLE_NAME, COLUMN_NAME "
+                    "FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE "
+                    "WHERE REFERENCED_TABLE_NAME = 'Employees' "
+                    "AND REFERENCED_COLUMN_NAME = 'id'"
+                )
+            );
+
+            std::unique_ptr<sql::ResultSet> res(pstmt->executeQuery());
+
+            // 遍历所有依赖的表并删除对应记录
+            while (res->next()) {
+                std::string tableName = res->getString("TABLE_NAME");
+                std::string columnName = res->getString("COLUMN_NAME");
+
+                // 动态生成删除语句
+                std::string deleteQuery = "DELETE FROM " + tableName + " WHERE " + columnName + " = ?";
+                std::unique_ptr<sql::PreparedStatement> deleteStmt(
+                    tsql.con->prepareStatement(deleteQuery)
+                );
+                deleteStmt->setInt(1, id);
+                deleteStmt->executeUpdate();
+
+                LOGI("成功删除依赖记录: 表 %s, 列 %s", tableName.c_str(), columnName.c_str());
             }
-            pstmt = tsql.con->prepareStatement("DELETE FROM Employees WHERE id = ?");
-            pstmt->setString(1, id);
+
+            // 删除 Employees 表中的记录
+            pstmt.reset(tsql.con->prepareStatement("DELETE FROM Employees WHERE id = ?"));
+            pstmt->setInt(1, id);
             pstmt->executeUpdate();
-            delete pstmt;
-        } catch (sql::SQLException &e) {
-            std::cerr << "Error in deleteEmployee: " << e.what() << std::endl;
-            return;
-        }
-        LOGI("移除成功: id = %s", id.c_str());
-    }
-    unique_ptr<sql::ResultSet> executeQuery(const sql::SQLString query) {
-        try {
-            unique_ptr<sql::Statement> stmt(tsql.con->createStatement());
-            unique_ptr<sql::ResultSet> res(stmt->executeQuery(query));
-            stmt.release();
-            return std::move(res);
-        } catch (sql::SQLException &e) {
-            std::cerr << "Error in executeQuery: " << e.what() << std::endl;
-            return nullptr;
+
+            LOGI("移除成功: id = %d", id);
+        } catch (sql::SQLException& e) {
+            std::cerr << "Error in deleteEmployeeWithDependencies: " << e.what() << std::endl;
         }
     }
 };

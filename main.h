@@ -4,16 +4,14 @@
 
 #include <sstream>
 #include <unordered_set>
-// #include <processthreadsapi.h>
 
-#include "utils/log.h"
+bool debugMode = true;
+int screenW, screenH;
+
+#include "utils/Log.h"
 #include "utils/Module.h"
 #include "utils/Layout.h"
 #include "utils/Menu.h"
 #include "utils/LoginMenu.h"
-
-bool debugMode = true;
-bool screenResized = false;
-int screenW, screenH;
 
 #endif // MIAN_H

@@ -19,21 +19,17 @@ public:
     void initialize(const sql::SQLString& hostName, const sql::SQLString& userName, const sql::SQLString& password) {
         driver = mysql::get_mysql_driver_instance();
         if (driver == nullptr) {
-            cerr << "TSQL::ERROR: Failed to get instance" << endl;
-            // LOGI("TSQL::ERROR: Failed to get instance");
+            LOGE("TSQL::ERROR: Failed to get instance");
             return;
         }
-        cout << "TSQL::SUCCESS: get instance" << endl;
-        // LOGI("TSQL::SUCCESS: get instance");
+        LOGI("TSQL::SUCCESS: get instance");
 
         con = driver->connect(hostName, userName, password);
         if (con == nullptr) {
-            cerr << "TSQL::ERROR: Failed to connect" << endl;
-            // LOGI("TSQL::ERROR: Failed to connect");
+            LOGE("TSQL::ERROR: Failed to connect");
             return;
         }
-        cout << "TSQL::SUCCESS: connect" << endl;
-        // LOGI("TSQL::SUCCESS: connect");
+        LOGI("TSQL::SUCCESS: connect");
 
         Statement *stmt;
         stmt = con->createStatement();

@@ -1,257 +1,6 @@
+#pragma once
 #ifndef MENU_H
 #define MENU_H
-
-extern bool debugMode;
-extern bool screenResized;
-extern int screenW;
-extern int screenH;
-
-class Manager
-{
-public:
-    bool init = false;
-    EmployeeManager* emplmgr = nullptr;
-    RecruitmentManager* recumgr = nullptr;
-    AttendanceManager* attemgr = nullptr;
-    PayrollManager* payrmgr = nullptr;
-    PerformanceManager* perfmgr = nullptr;
-    TrainingManager* traimgr = nullptr;
-    EmployeeServiceManager* emplsvcmgr = nullptr;
-
-    void initialize() {
-        emplmgr = new EmployeeManager();
-        recumgr = new RecruitmentManager();
-        attemgr = new AttendanceManager();
-        payrmgr = new PayrollManager();
-        perfmgr = new PerformanceManager();
-        traimgr = new TrainingManager();
-        emplsvcmgr = new EmployeeServiceManager();
-        init = true;
-    }
-    ~Manager() {
-        delete emplmgr;
-        delete recumgr;
-        delete attemgr;
-        delete payrmgr;
-        delete perfmgr;
-        delete traimgr;
-        delete emplsvcmgr;
-    }
-} mgr;
-
-vector<unique_ptr<sql::ResultSet>> resList;
-vector<string> queryList;
-unordered_map<string, string> translationMap = {
-    {"id", "ID"},
-    {"name", "名称"},
-    {"id_card", "身份证"},
-    {"contact", "联系方式"},
-    {"address", "地址"},
-    {"position", "职位"},
-    {"department", "部门"},
-    {"hire_date", "入职日期"},
-    {"education_background", "教育背景"},
-    {"work_experience", "工作经验"},
-    {"emergency_contact", "紧急联系人"},
-
-    {"job_id", "职位编号"},
-    {"candidate_name", "姓名"},
-    {"candidate_email", "邮箱"},
-    {"resume", "简历"},
-    {"status", "状态"},
-
-    {"application_id", "简历编号"},
-    {"interview_date", "面试日期"},
-    {"reminder_sent", "是否发送提醒"},
-
-
-    {"", ""}
-};
-
-
-void GenerateTable(sql::ResultSet* res, int index) {
-    ImGui::SetNextWindowSize(ImVec2(screenW * 0.8f, screenH * 0.8f));
-    ImGui::SetNextWindowPos(ImVec2(screenW * 0.2f, screenH * 0.0f));
-
-    string windowName = "SQL Query Results (" + to_string(index) + ")";
-    if (res == nullptr) {
-        ImGui::Begin(windowName.c_str());
-        ImGui::Text("Error: No results to display.");
-        ImGui::End();
-        return;
-    }
-
-    try {
-        // 获取列数
-        sql::ResultSetMetaData* metaData = res->getMetaData();
-        int colCount = metaData->getColumnCount();
-        int rowCount = res->getRow();
-
-        ImGui::Begin(windowName.c_str());
-
-        // 动态创建表格，根据列数设置表格的列数
-        static ImGuiTableFlags flags = ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-        static int freeze_cols = 1;
-        static int freeze_rows = 1;
-        ImGui::CheckboxFlags("手动调整列宽度", &flags, ImGuiTableFlags_Resizable);
-
-        ImVec2 outer_size = ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * rowCount);
-        if (ImGui::BeginTable("SQLTable", colCount, flags, outer_size)) {
-            // 生成表头，获取每一列的名称并创建表头
-            ImGui::TableSetupScrollFreeze(freeze_cols, freeze_rows);
-            for (int col = 1; col <= colCount; ++col) {
-                ImGui::TableSetupColumn(translationMap[metaData->getColumnLabel(col)].c_str());
-            }
-            ImGui::TableHeadersRow();
-
-            // 遍历 ResultSet 数据，逐行填充表格
-            res->beforeFirst();
-            while (res->next()) {
-                ImGui::TableNextRow(); // 创建一行
-
-                // 遍历每一列
-                for (int col = 1; col <= colCount; ++col) {
-                    ImGui::TableSetColumnIndex(col - 1); // 设置列索引
-
-                    // 获取列数据并显示（根据数据类型自动处理）
-                    int colType = metaData->getColumnType(col);
-                    if (colType == sql::DataType::VARCHAR || colType == sql::DataType::CHAR) {
-                        ImGui::Text("%s", res->getString(col).c_str());
-                    } else if (colType == sql::DataType::INTEGER || colType == sql::DataType::SMALLINT) {
-                        ImGui::Text("%d", res->getInt(col));
-                    } else if (colType == sql::DataType::DOUBLE) {
-                        ImGui::Text("%.2f", res->getDouble(col));
-                    } else {
-                        ImGui::Text("%s", res->getString(col).c_str());
-                    }
-                }
-            }
-            ImGui::EndTable();
-        }
-    } catch (sql::SQLException &e) {
-        std::cerr << "Error generating table: " << e.what() << std::endl;
-    }
-
-    if (ImGui::Button("关闭")) {
-        resList.erase(resList.begin() + index);
-    }
-    ImGui::End();
-}
-
-
-
-void GenerateTable(std::vector<std::unique_ptr<sql::ResultSet>>& resList) {
-    if (resList.empty()) return;
-
-    static int currentTableIndex = 0;
-    static char filterKeyword[128] = "";
-
-    ImGui::SetNextWindowSize(ImVec2(screenW * 0.8f, screenH * 0.8f));
-    ImGui::SetNextWindowPos(ImVec2(screenW * 0.2f, screenH * 0.0f));
-    ImGui::Begin("SQL Query Results");
-
-    // 表格选择下拉菜单
-    if (!resList.empty()) {
-        std::vector<std::string> tableNames;
-        for (size_t i = 0; i < resList.size(); ++i) {
-            tableNames.push_back("Table " + std::to_string(i + 1));
-        }
-
-        std::vector<const char*> cTableNames;
-        for (const auto& name : tableNames) {
-            cTableNames.push_back(name.c_str());
-        }
-
-        ImGui::Text("Select a table to display:");
-        ImGui::Combo("##TableSelector", &currentTableIndex, cTableNames.data(), cTableNames.size());
-    }
-
-    // 显示过滤输入框
-    ImGui::Spacing();
-    ImGui::Text("Filter rows by keyword:");
-    ImGui::InputText("##FilterKeyword", filterKeyword, sizeof(filterKeyword));
-
-    // 显示当前表格
-    if (currentTableIndex >= 0 && currentTableIndex < static_cast<int>(resList.size())) {
-        sql::ResultSet* res = resList[currentTableIndex].get();
-
-        if (!res) {
-            ImGui::Text("Error: No results to display for the selected table.");
-        } else {
-            try {
-                // 获取列数
-                sql::ResultSetMetaData* metaData = res->getMetaData();
-                int colCount = metaData->getColumnCount();
-
-                // 显示表格标题
-                static ImGuiTableFlags flags = ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
-                static int freeze_cols = 1;
-                static int freeze_rows = 1;
-
-                ImVec2 outer_size = ImVec2(0.0f, ImGui::GetTextLineHeightWithSpacing() * 10);
-                if (ImGui::BeginTable(("SQLTable##" + std::to_string(currentTableIndex)).c_str(), colCount, flags, outer_size)) {
-                    // 表头
-                    ImGui::TableSetupScrollFreeze(freeze_cols, freeze_rows);
-                    for (int col = 1; col <= colCount; ++col) {
-                        ImGui::TableSetupColumn(translationMap[metaData->getColumnLabel(col)].c_str());
-                    }
-                    ImGui::TableHeadersRow();
-
-                    // 遍历行数据，显示包含关键字的行
-                    res->beforeFirst();
-                    while (res->next()) {
-                        bool showRow = false;
-
-                        // 检查行中的所有列是否包含关键字
-                        for (int col = 1; col <= colCount; ++col) {
-                            std::string cellValue = res->getString(col);
-                            if (cellValue.find(filterKeyword) != string::npos) {
-                                showRow = true;
-                                break;
-                            }
-                        }
-
-                        // 如果该行包含关键字，则显示
-                        if (showRow) {
-                            ImGui::TableNextRow();
-                            for (int col = 1; col <= colCount; ++col) {
-                                ImGui::TableSetColumnIndex(col - 1);
-                                ImGui::Text("%s", res->getString(col).c_str());
-                            }
-                        }
-                    }
-                    ImGui::EndTable();
-                }
-            } catch (sql::SQLException& e) {
-                std::cerr << "Error generating table: " << e.what() << std::endl;
-            }
-        }
-    } else {
-        ImGui::Text("No tables available.");
-    }
-
-    if (ImGui::Button("关闭")) {
-        resList.erase(resList.begin() + currentTableIndex);
-    }
-
-    ImGui::End();
-}
-
-
-
-void ShowDebugWindow() {
-    ImGui::SetNextWindowSize(ImVec2(screenW * 1.0f, screenH * 0.2f));
-    ImGui::SetNextWindowPos(ImVec2(screenW * 0.0f, screenH * 0.8f));
-
-    ImGui::Begin("Debug Info");
-
-    if (ImGui::Button("Clear")) {
-        mlog.clear();
-    }
-    ImGui::Text(mlog.infoS.c_str());
-
-    ImGui::End();
-}
 
 void ShowMenu() {
     if (!mgr.init)
@@ -270,20 +19,6 @@ void ShowMenu() {
         ImGui::Indent(30.0f);
 
         if (ImGui::CollapsingHeader("添加员工")) {
-            static char name[128];
-            static char id_card[128];
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
-            ImGui::InputText("名称##name1", name, sizeof(name));
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
-            ImGui::InputText("身份证##id_card1", id_card, sizeof(id_card));
-            if (ImGui::Button("添加")) {
-                mgr.emplmgr->addEmployee(name, id_card);
-            }
-        }
-
-        if (ImGui::CollapsingHeader("查询员工")) {
-            string query = "select * from Employees";
-            bool hasCondition = false;
             static char name[32];
             static char id_card[32];
             static char contact[32];
@@ -305,6 +40,14 @@ void ShowMenu() {
             ImGui::InputText("教育背景", education_background, sizeof(education_background));
             ImGui::InputText("工作经验", work_experience, sizeof(work_experience));
             ImGui::InputText("紧急联系人", emergency_contact, sizeof(emergency_contact));
+            if (ImGui::Button("添加")) {
+                mgr.emplmgr->addEmployee(name, id_card);
+            }
+        }
+
+        if (ImGui::CollapsingHeader("查询员工")) {
+            string query = "select * from Employees";
+            bool hasCondition = false;
 
             static bool useCustomQuery = false;
             static char customQuery[1024] = "select * from Employees";
@@ -317,16 +60,16 @@ void ShowMenu() {
                 if (useCustomQuery) {
                     resList.push_back(std::move(mgr.emplmgr->executeQuery(customQuery)));
                 } else {
-                    query += buildQuery("name", string(name), hasCondition, true);
-                    query += buildQuery("id_card", string(id_card), hasCondition);
-                    query += buildQuery("contact", string(contact), hasCondition);
-                    query += buildQuery("address", string(address), hasCondition);
-                    query += buildQuery("position", string(position), hasCondition);
-                    query += buildQuery("department", string(department), hasCondition);
-                    query += buildQuery("hire_date", string(hire_date), hasCondition);
-                    query += buildQuery("education_background", string(education_background), hasCondition);
-                    query += buildQuery("work_experience", string(work_experience), hasCondition);
-                    query += buildQuery("emergency_contact", string(emergency_contact), hasCondition);
+                    // query += buildQuery("name", string(name), hasCondition, true);
+                    // query += buildQuery("id_card", string(id_card), hasCondition);
+                    // query += buildQuery("contact", string(contact), hasCondition);
+                    // query += buildQuery("address", string(address), hasCondition);
+                    // query += buildQuery("position", string(position), hasCondition);
+                    // query += buildQuery("department", string(department), hasCondition);
+                    // query += buildQuery("hire_date", string(hire_date), hasCondition);
+                    // query += buildQuery("education_background", string(education_background), hasCondition);
+                    // query += buildQuery("work_experience", string(work_experience), hasCondition);
+                    // query += buildQuery("emergency_contact", string(emergency_contact), hasCondition);
                     resList.push_back(std::move(mgr.emplmgr->executeQuery(query.c_str())));
                 }
             }
@@ -340,7 +83,7 @@ void ShowMenu() {
             ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
             ImGui::InputText("id", id, sizeof(id));
             if (ImGui::Button("移除")) {
-                mgr.emplmgr->deleteEmployee(id);
+                mgr.emplmgr->deleteEmployee(stoi(id));
             }
         }
         ImGui::Unindent(30.0f);
@@ -387,15 +130,15 @@ void ShowMenu() {
                 mgr.recumgr->addJobPost(title, description, requirements, salary_range);
             }
             if (ImGui::Button("查看已发布职位")) {
-                mgr.recumgr->addJobPost(title, description, requirements, salary_range);
+                static string query = "SELECT * FROM JobPosts";
+                resList.push_back(std::move(mgr.recumgr->executeQuery(query.c_str())));
             }
         }
 
-        if (ImGui::CollapsingHeader("简历筛选")) {
-            static char keyword[128];
-            ImGui::InputText("关键词", keyword, sizeof(keyword));
-            if (ImGui::Button("筛选简历")) {
-                resList.push_back(mgr.recumgr->autoFilterResumes(keyword));
+        if (ImGui::CollapsingHeader("简历查询")) {
+            if (ImGui::Button("查询")) {
+                static string query = "select * from Applications";
+                resList.push_back(std::move(mgr.recumgr->executeQuery(query.c_str())));
             }
         }
 
@@ -452,19 +195,8 @@ void ShowMenu() {
         }
 
         if (ImGui::CollapsingHeader("考勤查询")) {
-            string query = "SELECT * FROM Attendance";
-            bool hasCondition = false;
-            static char employee_id[32];
-            static char attendance_date[32];
-            static char status[16];
-
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
-            ImGui::InputText("员工ID", employee_id, sizeof(employee_id));
-
-            if (ImGui::Button("查询考勤")) {
-                query += buildQuery("employee_id", string(employee_id), hasCondition, true);
-                query += buildQuery("attendance_date", string(attendance_date), hasCondition, true);
-                query += buildQuery("status", string(status), hasCondition, true);
+            if (ImGui::Button("查询")) {
+                static string query = "SELECT * FROM Attendance";
                 resList.push_back(std::move(mgr.attemgr->executeQuery(query.c_str())));
             }
         }
@@ -507,12 +239,9 @@ void ShowMenu() {
         }
 
         if (ImGui::CollapsingHeader("查询工资单")) {
-            static char employee_id[32];
-            ImGui::InputText("员工ID", employee_id, sizeof(employee_id));
-
             if (ImGui::Button("查询")) {
-                string query = "SELECT * FROM Payroll WHERE employee_id = '" + string(employee_id) + "'";
-                resList.push_back(mgr.emplmgr->executeQuery(query));
+                static string query = "SELECT * FROM Payroll";
+                resList.push_back(std::move(mgr.payrmgr->executeQuery(query.c_str())));
             }
         }
 
@@ -558,12 +287,9 @@ void ShowMenu() {
         }
 
         if (ImGui::CollapsingHeader("查询绩效记录")) {
-            static char employee_id[32];
-            ImGui::InputText("员工ID", employee_id, sizeof(employee_id));
-
             if (ImGui::Button("查询")) {
-                string query = "SELECT * FROM Performance WHERE employee_id = '" + string(employee_id) + "'";
-                resList.push_back(mgr.emplmgr->executeQuery(query));
+                static string query = "SELECT * FROM Performance";
+                resList.push_back(std::move(mgr.perfmgr->executeQuery(query.c_str())));
             }
         }
 
@@ -605,6 +331,13 @@ void ShowMenu() {
             }
         }
 
+        if (ImGui::CollapsingHeader("查询培训课程")) {
+            if (ImGui::Button("查询")) {
+                static string query = "SELECT * FROM TrainingCourses";
+                resList.push_back(std::move(mgr.traimgr->executeQuery(query.c_str())));
+            }
+        }
+
         if (ImGui::CollapsingHeader("报名培训课程")) {
             static char employee_id[32];
             static char course_id[32];
@@ -614,6 +347,13 @@ void ShowMenu() {
 
             if (ImGui::Button("报名")) {
                 mgr.traimgr->enrollInCourse(stoi(employee_id), stoi(course_id));
+            }
+        }
+
+        if (ImGui::CollapsingHeader("查询报名情况")) {
+            if (ImGui::Button("查询")) {
+                static string query = "SELECT * FROM Enrollments";
+                resList.push_back(std::move(mgr.traimgr->executeQuery(query.c_str())));
             }
         }
 
@@ -653,6 +393,13 @@ void ShowMenu() {
 
             if (ImGui::Button("提交申请")) {
                 mgr.emplsvcmgr->submitLeaveRequest(stoi(employee_id), start_date, end_date);
+            }
+        }
+
+        if (ImGui::CollapsingHeader("查询休假申请")) {
+            if (ImGui::Button("查询")) {
+                static string query = "SELECT * FROM LeaveRequests";
+                resList.push_back(std::move(mgr.emplsvcmgr->executeQuery(query.c_str())));
             }
         }
 
