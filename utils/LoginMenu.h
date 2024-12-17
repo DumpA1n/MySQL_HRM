@@ -11,7 +11,9 @@ struct User {
     std::string department;
 };
 
-extern void ShowMenu(User user);
+User curLoginUser;
+
+extern void ShowMenu();
 
 bool binitializeUsersTable = false;
 void initializeUsersTable() {
@@ -125,6 +127,7 @@ void RenderLoginWindow() {
             if (authenticateUser(username, password, user)) {
                 isLoggedIn = true;
                 loggedInUser = user;
+                curLoginUser = user;
             } else {
                 loginMessage = "登陆失败! 错误的用户名或密码.";
             }
@@ -143,7 +146,7 @@ void RenderLoginWindow() {
                         loggedInUser.position.c_str());
         }
 
-        ShowMenu(loggedInUser);
+        ShowMenu();
 
         if (loggedInUser.role == "admin") {
             ImGui::Text("您是管理员.");

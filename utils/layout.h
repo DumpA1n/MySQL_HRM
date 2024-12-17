@@ -112,16 +112,10 @@ void ShowDebugWindow() {
 
 
 
-
 void GenerateTable(std::vector<QueryResult>& queryResults) {
-    // if (queryResults.empty()) return;
-
     // 如果需要更新，执行查询并刷新结果
     for (auto& it : queryResults) {
-        // if (it.bUpdated) {
-            it.resultSet = mgr.hrm->executeQuery(it.query.c_str());
-        //     it.bUpdated = false;
-        // }
+        it.resultSet = mgr.hrm->executeQuery(it.query.c_str());
     }
 
     static char filterKeyword[128] = "";
@@ -135,7 +129,6 @@ void GenerateTable(std::vector<QueryResult>& queryResults) {
             QueryResult& result = queryResults[i];
 
             if (ImGui::BeginTabItem(("Tab " + std::to_string(i + 1) + " (" + result.tableName + ")").c_str(), &result.bTabOpen)) {
-
                 ImGui::Spacing();
                 ImGui::Text("Filter:");
                 ImGui::SameLine();
@@ -166,6 +159,7 @@ void GenerateTable(std::vector<QueryResult>& queryResults) {
 
                             res->beforeFirst();
                             static std::set<std::pair<int, int>> selectedCells; // 存储选中的行和列
+                            static std::map<int, std::map<int, std::string>> editValues; // 存储待编辑值
 
                             while (res->next()) {
                                 ImGui::TableNextRow(0, 30.0f);
@@ -184,30 +178,55 @@ void GenerateTable(std::vector<QueryResult>& queryResults) {
                                         }
                                     }
 
+                                    // 右键菜单
                                     if (ImGui::BeginPopupContextItem(("CellContextMenu##" + std::to_string(rowId) + std::to_string(col)).c_str())) {
                                         if (selectedCells.empty()) {
-                                            static char newValue[128] = "";
-                                            ImGui::Text("编辑:");
-                                            ImGui::InputText("##NewValue", newValue, sizeof(newValue));
-                                            if (ImGui::Button("修改")) {
-                                                std::string columnName = metaData->getColumnLabel(col);
-                                                updateColumnValue(result.tableName, columnName, "id", rowId, newValue);
-                                                result.bUpdated = true;
-                                                selectedCells.clear();
-                                                ImGui::CloseCurrentPopup();
+                                            if (ImGui::Button("编辑此行")) {
+                                                // 初始化待编辑值
+                                                editValues[rowId].clear();
+                                                for (int editCol = 1; editCol <= colCount; ++editCol) {
+                                                    editValues[rowId][editCol] = res->getString(editCol);
+                                                }
+                                                ImGui::OpenPopup(("EditRowPopup##" + std::to_string(rowId)).c_str());
                                             }
-                                            ImGui::SameLine();
-                                            if (ImGui::Button("取消")) {
-                                                ImGui::CloseCurrentPopup();
+
+                                            // 编辑弹窗逻辑
+                                            if (ImGui::BeginPopup(("EditRowPopup##" + std::to_string(rowId)).c_str())) {
+                                                for (int editCol = 1; editCol <= colCount; ++editCol) {
+                                                    std::string columnName = metaData->getColumnLabel(editCol);
+                                                    std::string& cellValue = editValues[rowId][editCol];
+                                                    ImGui::InputText(("##Edit" + columnName).c_str(), &cellValue[0], cellValue.size() + 128);
+                                                    ImGui::SameLine();
+                                                    ImGui::Text("%s", columnName.c_str());
+                                                }
+
+                                                if (ImGui::Button("保存修改")) {
+                                                    for (int editCol = 1; editCol <= colCount; ++editCol) {
+                                                        std::string columnName = metaData->getColumnLabel(editCol);
+                                                        updateColumnValue(result.tableName, columnName, "id", rowId, editValues[rowId][editCol]);
+                                                    }
+                                                    result.bUpdated = true;
+                                                    editValues.erase(rowId);
+                                                    ImGui::CloseCurrentPopup();
+                                                }
+
+                                                ImGui::SameLine();
+                                                if (ImGui::Button("取消")) {
+                                                    editValues.erase(rowId);
+                                                    ImGui::CloseCurrentPopup();
+                                                }
+
+                                                ImGui::EndPopup();
                                             }
-                                            if (ImGui::MenuItem("删除此行")) {
+
+                                            if (ImGui::Button("删除此行")) {
                                                 deleteColumn(result.tableName, "id", rowId);
                                                 result.bUpdated = true;
                                                 selectedCells.clear();
                                                 ImGui::CloseCurrentPopup();
                                             }
                                         } else {
-                                            if (ImGui::MenuItem("批量删除")) {
+                                            if (ImGui::Button("批量删除")) {
                                                 for (const auto& cell : selectedCells) {
                                                     deleteColumn(result.tableName, "id", cell.first);
                                                 }
@@ -215,12 +234,11 @@ void GenerateTable(std::vector<QueryResult>& queryResults) {
                                                 selectedCells.clear();
                                                 ImGui::CloseCurrentPopup();
                                             }
-                                            if (ImGui::MenuItem("取消所有选择")) {
+                                            if (ImGui::Button("取消选择")) {
                                                 selectedCells.clear();
                                                 ImGui::CloseCurrentPopup();
                                             }
                                         }
-
                                         ImGui::EndPopup();
                                     }
                                 }
@@ -246,6 +264,7 @@ void GenerateTable(std::vector<QueryResult>& queryResults) {
 
     ImGui::End();
 }
+
 
 
 

@@ -2,7 +2,7 @@
 #ifndef MENU_H
 #define MENU_H
 
-void ShowMenu(User user) {
+void ShowMenu() {
     if (!mgr.init)
         mgr.initialize();
 
@@ -18,7 +18,7 @@ void ShowMenu(User user) {
     {
         ImGui::Indent(30.0f);
 
-        if (user.role == "admin" && ImGui::CollapsingHeader("添加员工")) {
+        if (curLoginUser.role == "admin" && ImGui::CollapsingHeader("添加员工")) {
             static char name[32];
             static char id_card[32];
             static char contact[32];
@@ -48,7 +48,7 @@ void ShowMenu(User user) {
             }
         }
 
-        if (user.role == "admin" && ImGui::CollapsingHeader("创键员工账号")) {
+        if (curLoginUser.role == "admin" && ImGui::CollapsingHeader("创键员工账号")) {
             static int id;
             static char username[128];
             static char password[128];
@@ -85,7 +85,7 @@ void ShowMenu(User user) {
             }
         }
 
-        if (user.role == "admin" && ImGui::CollapsingHeader("移除员工")) {
+        if (curLoginUser.role == "admin" && ImGui::CollapsingHeader("移除员工")) {
             static int idRange[2];
             ImGui::InputInt2("id", idRange);
             if (ImGui::Button("闭区间移除")) {
@@ -116,9 +116,9 @@ void ShowMenu(User user) {
     if (ImGui::CollapsingHeader("招聘入职管理")) {
         ImGui::Indent(30.0f);
 
-        if (user.role == "user") {
+        if (curLoginUser.role == "user") {
             if (ImGui::Button("查看入职任务")) {
-                static string query = "SELECT * FROM OnboardingTasks WHERE id = " + to_string(user.employeeId);
+                static string query = "SELECT * FROM OnboardingTasks WHERE id = " + to_string(curLoginUser.employeeId);
                 queryResults.push_back(QueryResult(query, "OnboardingTasks", std::move(mgr.recumgr->executeQuery(query.c_str()))));
             }
         } else {
