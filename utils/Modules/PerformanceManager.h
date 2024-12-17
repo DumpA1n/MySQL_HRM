@@ -29,7 +29,7 @@ public:
             pstmt->execute();
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in submitPerformanceReview: " << e.what() << std::endl;
+            LOGE("Error in submitPerformanceReview: %s", e.what());
         }
     }
 
@@ -43,7 +43,7 @@ public:
             pstmt->execute();
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in updatePerformanceReview: " << e.what() << std::endl;
+            LOGE("Error in updatePerformanceReview: %s", e.what());
         }
     }
 
@@ -56,7 +56,7 @@ public:
             pstmt->execute();
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in deletePerformanceReview: " << e.what() << std::endl;
+            LOGE("Error in deletePerformanceReview: %s", e.what());
         }
     }
 
@@ -75,7 +75,7 @@ public:
             delete res;
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in getPerformanceReviews: " << e.what() << std::endl;
+            LOGE("Error in getPerformanceReviews: %s", e.what());
         }
     }
 };

@@ -5,7 +5,13 @@
 struct User {
     std::string username;
     std::string role;
+    int employeeId = -1;      // 关联员工 ID
+    std::string employeeName;
+    std::string position;
+    std::string department;
 };
+
+extern void ShowMenu(User user);
 
 bool binitializeUsersTable = false;
 void initializeUsersTable() {
@@ -15,22 +21,28 @@ void initializeUsersTable() {
             return;
         }
 
+        const char* Users = R"(
+            CREATE TABLE IF NOT EXISTS Users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                employee_id INT,
+                username VARCHAR(255) UNIQUE NOT NULL,
+                password VARCHAR(255) NOT NULL,
+                role ENUM('admin', 'user') NOT NULL,
+                FOREIGN KEY (employee_id) REFERENCES Employees(id)
+            ) ENGINE=InnoDB;
+        )";
+
         std::unique_ptr<sql::Statement> stmt(tsql.con->createStatement());
-        stmt->execute("CREATE TABLE IF NOT EXISTS users ("
-                     "id INT AUTO_INCREMENT PRIMARY KEY,"
-                     "username VARCHAR(255) UNIQUE NOT NULL,"
-                     "password VARCHAR(255) NOT NULL,"
-                     "role ENUM('admin', 'user') NOT NULL"
-                     ") ENGINE=InnoDB;");
+        stmt->execute(sql::SQLString(Users));
 
         std::unique_ptr<sql::ResultSet> res(stmt->executeQuery(
-            "SELECT COUNT(*) AS user_count FROM users WHERE username = 'admin'"));
+            "SELECT COUNT(*) AS user_count FROM Users WHERE username = 'admin'"));
         res->next();
 
         if (res->getInt("user_count") == 0) {
             std::unique_ptr<sql::PreparedStatement> pstmt(
                 tsql.con->prepareStatement(
-                    "INSERT INTO users (username, password, role) VALUES (?, ?, ?)"));
+                    "INSERT INTO Users (username, password, role) VALUES (?, ?, ?)"));
 
             pstmt->setString(1, "admin");
             pstmt->setString(2, "admin");
@@ -55,7 +67,14 @@ bool authenticateUser(const std::string& username, const std::string& password, 
         }
 
         std::unique_ptr<sql::PreparedStatement> pstmt(
-            tsql.con->prepareStatement("SELECT username, role FROM users WHERE username = ? AND password = ?"));
+            tsql.con->prepareStatement(
+                "SELECT Users.username, Users.role, Users.employee_id, "
+                "Employees.name, Employees.position, Employees.department "
+                "FROM Users "
+                "LEFT JOIN Employees ON Users.employee_id = Employees.id "
+                "WHERE Users.username = ? AND Users.password = ?"
+            )
+        );
 
         pstmt->setString(1, username);
         pstmt->setString(2, password);
@@ -64,6 +83,10 @@ bool authenticateUser(const std::string& username, const std::string& password, 
         if (res->next()) {
             user.username = res->getString("username");
             user.role = res->getString("role");
+            user.employeeId = res->getInt("employee_id");
+            user.employeeName = res->isNull("name") ? "" : res->getString("name");
+            user.position = res->isNull("position") ? "" : res->getString("position");
+            user.department = res->isNull("department") ? "" : res->getString("department");
             return true;
         }
     } catch (sql::SQLException& e) {
@@ -72,6 +95,7 @@ bool authenticateUser(const std::string& username, const std::string& password, 
 
     return false;
 }
+
 
 void RenderLoginWindow() {
     if (!binitializeUsersTable) initializeUsersTable();
@@ -101,7 +125,6 @@ void RenderLoginWindow() {
             if (authenticateUser(username, password, user)) {
                 isLoggedIn = true;
                 loggedInUser = user;
-                loginMessage = "欢迎, " + user.username + " (" + user.role + ").";
             } else {
                 loginMessage = "登陆失败! 错误的用户名或密码.";
             }
@@ -113,9 +136,16 @@ void RenderLoginWindow() {
         }
     } else {
         ImGui::Text("欢迎, %s (%s)!", loggedInUser.username.c_str(), loggedInUser.role.c_str());
+        if (!loggedInUser.employeeName.empty()) {
+            ImGui::Text("关联员工: %s, 部门: %s, 职位: %s",
+                        loggedInUser.employeeName.c_str(),
+                        loggedInUser.department.c_str(),
+                        loggedInUser.position.c_str());
+        }
+
+        ShowMenu(loggedInUser);
 
         if (loggedInUser.role == "admin") {
-            ShowMenu();
             ImGui::Text("您是管理员.");
         } else {
             ImGui::Text("您是用户.");

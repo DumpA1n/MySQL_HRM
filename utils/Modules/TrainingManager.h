@@ -37,7 +37,7 @@ public:
             pstmt->execute();
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in addTrainingCourse: " << e.what() << std::endl;
+            LOGE("Error in addTrainingCourse: %s", e.what());
         }
     }
 
@@ -51,7 +51,7 @@ public:
             pstmt->execute();
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in enrollInCourse: " << e.what() << std::endl;
+            LOGE("Error in enrollInCourse: %s", e.what());
         }
     }
 };

@@ -39,7 +39,7 @@ public:
             pstmt->execute();
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in submitLeaveRequest: " << e.what() << std::endl;
+            LOGE("Error in submitLeaveRequest: %s", e.what());
         }
     }
 
@@ -53,7 +53,7 @@ public:
             pstmt->execute();
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in submitReimbursement: " << e.what() << std::endl;
+            LOGE("Error in submitReimbursement: %s", e.what());
         }
     }
 };

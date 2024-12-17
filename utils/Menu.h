@@ -2,7 +2,7 @@
 #ifndef MENU_H
 #define MENU_H
 
-void ShowMenu() {
+void ShowMenu(User user) {
     if (!mgr.init)
         mgr.initialize();
 
@@ -18,7 +18,7 @@ void ShowMenu() {
     {
         ImGui::Indent(30.0f);
 
-        if (ImGui::CollapsingHeader("添加员工")) {
+        if (user.role == "admin" && ImGui::CollapsingHeader("添加员工")) {
             static char name[32];
             static char id_card[32];
             static char contact[32];
@@ -40,8 +40,24 @@ void ShowMenu() {
             ImGui::InputText("教育背景", education_background, sizeof(education_background));
             ImGui::InputText("工作经验", work_experience, sizeof(work_experience));
             ImGui::InputText("紧急联系人", emergency_contact, sizeof(emergency_contact));
-            if (ImGui::Button("添加")) {
-                mgr.emplmgr->addEmployee(name, id_card);
+            if (ImGui::Button("添加##addEmployee")) {
+                mgr.emplmgr->addEmployee(name, id_card, contact, address, position, department, hire_date, education_background, work_experience, emergency_contact);
+            }
+            if (ImGui::Button("随机添加")) {
+                mgr.emplmgr->GenerateRandomEmployeeData();
+            }
+        }
+
+        if (user.role == "admin" && ImGui::CollapsingHeader("创键员工账号")) {
+            static int id;
+            static char username[128];
+            static char password[128];
+
+            ImGui::InputInt("ID##IDaddtouser", &id);
+            ImGui::InputText("用户名##UNaddtouser", username, sizeof(username));
+            ImGui::InputText("密码##PWaddtouser", password, sizeof(password));
+            if (ImGui::Button("添加##addEmployeetoUser")) {
+                mgr.emplmgr->addEmployeeToUsers(id, username, password);
             }
         }
 
@@ -56,7 +72,7 @@ void ShowMenu() {
                 ImGui::SetTooltip("TABLE Employees \nid INT AUTO_INCREMENT PRIMARY KEY \nname VARCHAR(255) \nid_card VARCHAR(20) \ncontact VARCHAR(50) \naddress VARCHAR(255) \nposition VARCHAR(100) \ndepartment VARCHAR(100) \nhire_date DATE \neducation_background TEXT \nwork_experience TEXT \nemergency_contact VARCHAR(255)");
                 ImGui::InputTextMultiline("##customQuery1", customQuery, sizeof(customQuery), ImVec2(300.0f, 100.0f));
             }
-            if (ImGui::Button("查询")) {
+            if (ImGui::Button("查询##Employees1")) {
                 if (useCustomQuery) {
                     queryResults.push_back(QueryResult(customQuery, "Employees", std::move(mgr.emplmgr->executeQuery(customQuery))));
                 } else {
@@ -68,12 +84,14 @@ void ShowMenu() {
                 queryResults.clear();
             }
         }
-        if (ImGui::CollapsingHeader("移除员工")) {
-            static char id[32];
-            ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x * 0.5f);
-            ImGui::InputText("id", id, sizeof(id));
-            if (ImGui::Button("移除")) {
-                mgr.emplmgr->deleteColumn(stoi(id));
+
+        if (user.role == "admin" && ImGui::CollapsingHeader("移除员工")) {
+            static int idRange[2];
+            ImGui::InputInt2("id", idRange);
+            if (ImGui::Button("闭区间移除")) {
+                for (int i = idRange[0]; i <= idRange[1]; i++) {
+                    mgr.emplmgr->deleteColumn(i);
+                }
             }
         }
         ImGui::Unindent(30.0f);
@@ -97,16 +115,13 @@ void ShowMenu() {
 // #################################################### 招聘与入职管理 ####################################################
     if (ImGui::CollapsingHeader("招聘入职管理")) {
         ImGui::Indent(30.0f);
-        if (debugMode) {
-            if (ImGui::CollapsingHeader("调试功能##招聘与入职管理")) {
-                static int job_id = 1;  // 默认为1号职位
-                ImGui::InputInt("职位编号", &job_id);
-                if (ImGui::Button("随机生成简历")) {
-                    mgr.recumgr->addRandomApplication(job_id);
-                }
-            }
-        }
 
+        if (user.role == "user") {
+            if (ImGui::Button("查看入职任务")) {
+                static string query = "SELECT * FROM OnboardingTasks WHERE id = " + to_string(user.employeeId);
+                queryResults.push_back(QueryResult(query, "OnboardingTasks", std::move(mgr.recumgr->executeQuery(query.c_str()))));
+            }
+        } else {
         if (ImGui::CollapsingHeader("发布职位")) {
             static char title[128] = "C++(图形研发)";
             static char description[1024] = "1、负责移动端3D渲染引擎的功能研究及开发；\n2、参与项目的AR特效开发，特效SDK维护；\n3、对渲染相关技术进行前瞻性研究；";
@@ -119,14 +134,20 @@ void ShowMenu() {
             if (ImGui::Button("发布")) {
                 mgr.recumgr->addJobPost(title, description, requirements, salary_range);
             }
-            if (ImGui::Button("查看已发布职位")) {
+            if (ImGui::Button("查看职位")) {
                 static string query = "SELECT * FROM JobPosts";
                 queryResults.push_back(QueryResult(query, "JobPosts", std::move(mgr.recumgr->executeQuery(query.c_str()))));
             }
         }
 
         if (ImGui::CollapsingHeader("简历查询")) {
-            if (ImGui::Button("查询")) {
+            static int job_id = 1;  // 默认为1号职位
+            ImGui::InputInt("职位编号", &job_id);
+            if (ImGui::Button("随机生成简历")) {
+                mgr.recumgr->addRandomApplication(job_id);
+            }
+
+            if (ImGui::Button("查询##2")) {
                 static string query = "select * from Applications";
                 queryResults.push_back(QueryResult(query, "Applications", std::move(mgr.recumgr->executeQuery(query.c_str()))));
             }
@@ -137,15 +158,32 @@ void ShowMenu() {
             static char interview_date[64];
             ImGui::InputInt("简历编号", &application_id);
             ImGui::InputText("面试日期", interview_date, sizeof(interview_date));
+
             if (ImGui::Button("安排面试")) {
                 mgr.recumgr->scheduleInterview(application_id, interview_date);
             }
-            if (ImGui::Button("查看面试排期")) {
+
+            if (ImGui::Button("查看面试")) {
                 static string query = "SELECT * FROM Interviews";
                 queryResults.push_back(QueryResult(query, "Interviews", std::move(mgr.recumgr->executeQuery(query.c_str()))));
             }
         }
 
+        if (ImGui::CollapsingHeader("入职任务管理")) {
+            static int employee_id;
+
+            ImGui::InputInt("员工编号", &employee_id);
+
+            if (ImGui::Button("生成入职任务")) {
+                mgr.recumgr->createOnboardingTasks(employee_id);
+            }
+
+            if (ImGui::Button("查看入职任务")) {
+                static string query = "SELECT * FROM OnboardingTasks";
+                queryResults.push_back(QueryResult(query, "OnboardingTasks", std::move(mgr.recumgr->executeQuery(query.c_str()))));
+            }
+        }
+        }
         ImGui::Unindent(30.0f);
     }
 
@@ -225,7 +263,7 @@ void ShowMenu() {
                 mgr.payrmgr->generatePayroll(stoi(employee_id), month, stod(amount));
             }
 
-            if (ImGui::Button("查询")) {
+            if (ImGui::Button("查询##3")) {
                 static string query = "SELECT * FROM Payroll";
                 queryResults.push_back(QueryResult(query, "Payroll", std::move(mgr.payrmgr->executeQuery(query.c_str()))));
             }
@@ -297,14 +335,12 @@ void ShowMenu() {
 
 
 
-
-
 // #################################################### 员工培训 ####################################################
     if (ImGui::CollapsingHeader("员工培训"))
     {
         ImGui::Indent(30.0f);
 
-        if (ImGui::CollapsingHeader("发布培训课程")) {
+        if (ImGui::CollapsingHeader("培训课程管理")) {
             static char course_name[128];
             static char description[256];
             ImGui::InputText("课程名称", course_name, sizeof(course_name));
@@ -313,10 +349,8 @@ void ShowMenu() {
             if (ImGui::Button("发布")) {
                 mgr.traimgr->addTrainingCourse(course_name, description);
             }
-        }
 
-        if (ImGui::CollapsingHeader("查询培训课程")) {
-            if (ImGui::Button("查询")) {
+            if (ImGui::Button("查询##4")) {
                 static string query = "SELECT * FROM TrainingCourses";
                 queryResults.push_back(QueryResult(query, "TrainingCourses", std::move(mgr.traimgr->executeQuery(query.c_str()))));
             }
@@ -333,7 +367,7 @@ void ShowMenu() {
                 mgr.traimgr->enrollInCourse(stoi(employee_id), stoi(course_id));
             }
 
-            if (ImGui::Button("查询")) {
+            if (ImGui::Button("查询##5")) {
                 static string query = "SELECT * FROM Enrollments";
                 queryResults.push_back(QueryResult(query, "Enrollments", std::move(mgr.traimgr->executeQuery(query.c_str()))));
             }
@@ -357,14 +391,12 @@ void ShowMenu() {
 
 
 
-
-
 // #################################################### 员工服务 ####################################################
     if (ImGui::CollapsingHeader("员工服务"))
     {
         ImGui::Indent(30.0f);
 
-        if (ImGui::CollapsingHeader("申请休假")) {
+        if (ImGui::CollapsingHeader("休假管理")) {
             static char employee_id[32];
             static char start_date[32];
             static char end_date[32];
@@ -376,10 +408,8 @@ void ShowMenu() {
             if (ImGui::Button("提交申请")) {
                 mgr.emplsvcmgr->submitLeaveRequest(stoi(employee_id), start_date, end_date);
             }
-        }
 
-        if (ImGui::CollapsingHeader("查询申请")) {
-            if (ImGui::Button("查询")) {
+            if (ImGui::Button("查询申请")) {
                 static string query = "SELECT * FROM LeaveRequests";
                 queryResults.push_back(QueryResult(query, "LeaveRequests", std::move(mgr.emplsvcmgr->executeQuery(query.c_str()))));
             }
@@ -394,6 +424,7 @@ void ShowMenu() {
             if (ImGui::Button("提交报销")) {
                 mgr.emplsvcmgr->submitReimbursement(stoi(employee_id), stod(amount));
             }
+
             if (ImGui::Button("查询报销")) {
                 static string query = "SELECT * FROM Reimbursements";
                 queryResults.push_back(QueryResult(query, "Reimbursements", std::move(mgr.emplsvcmgr->executeQuery(query.c_str()))));
@@ -405,10 +436,6 @@ void ShowMenu() {
 
 
 
-    // for (int i = 0; i < resList.size(); i++) {
-    //     GenerateTable(resList[i].get(), i);
-    // }
-    // GenerateTable(resList);
     GenerateTable(queryResults);
     ShowDebugWindow();
     ImGui::End();

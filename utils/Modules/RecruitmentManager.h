@@ -56,7 +56,7 @@ public:
             stmt->execute(sql::SQLString(OnboardingTasks));
             delete stmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in RecruitmentManager create table: " << e.what() << std::endl;
+            LOGE("Error in RecruitmentManager create table: %s", e.what());
         }
     }
 
@@ -99,7 +99,7 @@ public:
             delete pstmt;
             LOGI("随机简历生成成功");
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in addRandomApplication: " << e.what() << std::endl;
+            LOGE("Error in addRandomApplication: %s", e.what());
         }
     }
 
@@ -114,7 +114,7 @@ public:
             delete pstmt;
             LOGI("职位发布成功");
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in addJobPost: " << e.what() << std::endl;
+            LOGE("Error in addJobPost: %s", e.what());
         }
     }
 
@@ -126,7 +126,7 @@ public:
             delete pstmt;
             return res;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in autoFilterResumes: " << e.what() << std::endl;
+            LOGE("Error in autoFilterResumes: %s", e.what());
         }
         return nullptr;
     }
@@ -144,7 +144,6 @@ public:
         }
     }
 
-    // 入职任务生成
     void createOnboardingTasks(int employee_id) {
         try {
             sql::PreparedStatement* pstmt = tsql.con->prepareStatement("INSERT INTO OnboardingTasks (employee_id, task_description, due_date) VALUES (?, 'Complete onboarding training', ?)");
@@ -159,19 +158,7 @@ public:
 
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in createOnboardingTasks: " << e.what() << std::endl;
-        }
-    }
-
-    unique_ptr<sql::ResultSet> executeQuery(const sql::SQLString query) {
-        try {
-            unique_ptr<sql::Statement> stmt(tsql.con->createStatement());
-            unique_ptr<sql::ResultSet> res(stmt->executeQuery(query));
-            stmt.release();
-            return std::move(res);
-        } catch (sql::SQLException &e) {
-            std::cerr << "Error in executeQuery: " << e.what() << std::endl;
-            return nullptr;
+            LOGE("Error in createOnboardingTasks: %s", e.what());
         }
     }
 };

@@ -29,7 +29,7 @@ public:
             pstmt->execute();
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in recordAttendance: " << e.what() << std::endl;
+            LOGE("Error in recordAttendance: %s", e.what());
         }
     }
 
@@ -48,7 +48,7 @@ public:
             delete res;
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in getAttendance: " << e.what() << std::endl;
+            LOGE("Error in getAttendance: %s", e.what());
         }
     }
 
@@ -61,7 +61,7 @@ public:
             pstmt->execute();
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in deleteAttendance: " << e.what() << std::endl;
+            LOGE("Error in deleteAttendance: %s", e.what());
         }
     }
 };

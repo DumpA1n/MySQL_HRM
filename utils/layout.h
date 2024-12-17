@@ -113,19 +113,14 @@ void ShowDebugWindow() {
 
 
 
-
-
-
-
-
 void GenerateTable(std::vector<QueryResult>& queryResults) {
-    if (queryResults.empty()) return;
+    // if (queryResults.empty()) return;
 
     // 如果需要更新，执行查询并刷新结果
     for (auto& it : queryResults) {
-        // if (it.needUpdated) {
+        // if (it.bUpdated) {
             it.resultSet = mgr.hrm->executeQuery(it.query.c_str());
-            // it.needUpdated = false;
+        //     it.bUpdated = false;
         // }
     }
 
@@ -135,7 +130,6 @@ void GenerateTable(std::vector<QueryResult>& queryResults) {
     ImGui::SetNextWindowPos(ImVec2(screenW * 0.2f, screenH * 0.0f));
     ImGui::Begin("SQL Query Results");
 
-    // 创建 Tab Bar
     if (ImGui::BeginTabBar("QueryResultsTabBar")) {
         for (size_t i = 0; i < queryResults.size(); ++i) {
             QueryResult& result = queryResults[i];
@@ -153,60 +147,85 @@ void GenerateTable(std::vector<QueryResult>& queryResults) {
                     ImGui::Text("Error: No results to display for the selected table.");
                 } else {
                     try {
-                        // 获取列数
                         sql::ResultSetMetaData* metaData = res->getMetaData();
                         int colCount = metaData->getColumnCount();
 
-                        // 表格设置
                         static ImGuiTableFlags flags = ImGuiTableFlags_ScrollX | ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersOuter | ImGuiTableFlags_BordersV | ImGuiTableFlags_Reorderable | ImGuiTableFlags_Hideable;
                         static int freeze_cols = 1;
                         static int freeze_rows = 1;
 
                         ImVec2 outer_size = ImVec2(0.0f, 0.0f);
                         if (ImGui::BeginTable(("SQLTable##" + std::to_string(i)).c_str(), colCount, flags, outer_size)) {
-                            // 表头
                             ImGui::TableSetupScrollFreeze(freeze_cols, freeze_rows);
                             for (int col = 1; col <= colCount; ++col) {
-                                ImGui::TableSetupColumn(translationMap[metaData->getColumnLabel(col)].c_str());
+                                if (translationMap.find(metaData->getColumnLabel(col)) != translationMap.end())
+                                    ImGui::TableSetupColumn(translationMap[metaData->getColumnLabel(col)].c_str());
+                                else ImGui::TableSetupColumn(metaData->getColumnLabel(col).c_str());
                             }
                             ImGui::TableHeadersRow();
 
-                            // 遍历行数据，显示包含关键字的行
                             res->beforeFirst();
+                            static std::set<std::pair<int, int>> selectedCells; // 存储选中的行和列
+
                             while (res->next()) {
-                                bool showRow = false;
+                                ImGui::TableNextRow(0, 30.0f);
+                                int rowId = res->getInt(1);
 
-                                // 检查行中的所有列是否包含关键字
                                 for (int col = 1; col <= colCount; ++col) {
-                                    if (res->getString(col).find(filterKeyword) != std::string::npos) {
-                                        showRow = true;
-                                        break;
-                                    }
-                                }
+                                    ImGui::TableSetColumnIndex(col - 1);
+                                    std::pair<int, int> cellId = {rowId, col};
+                                    bool selected = selectedCells.count(cellId) > 0;
 
-                                if (showRow) {
-                                    ImGui::TableNextRow();
-                                    int rowId = res->getInt(1);
-
-                                    for (int col = 1; col <= colCount; ++col) {
-                                        ImGui::TableSetColumnIndex(col - 1);
-                                        
-                                        if (ImGui::Selectable(res->getString(col).c_str(), false, ImGuiSelectableFlags_SpanAllColumns)) {
-                                            // 选中行时的操作
+                                    if (ImGui::Selectable(res->getString(col).c_str(), selected, ImGuiSelectableFlags_SpanAllColumns)) {
+                                        if (selected) {
+                                            selectedCells.erase(cellId);
+                                        } else {
+                                            selectedCells.insert(cellId);
                                         }
                                     }
 
-                                    // 右键菜单
-                                    if (ImGui::BeginPopupContextItem(("RowContextMenu##" + std::to_string(rowId)).c_str())) {
-                                        ImGui::Text("Row [%d]", rowId);
-                                        if (ImGui::MenuItem("删除")) {
-                                            deleteColumn(result.tableName, "id", rowId);
-                                            result.bUpdated = true;
+                                    if (ImGui::BeginPopupContextItem(("CellContextMenu##" + std::to_string(rowId) + std::to_string(col)).c_str())) {
+                                        if (selectedCells.empty()) {
+                                            static char newValue[128] = "";
+                                            ImGui::Text("编辑:");
+                                            ImGui::InputText("##NewValue", newValue, sizeof(newValue));
+                                            if (ImGui::Button("修改")) {
+                                                std::string columnName = metaData->getColumnLabel(col);
+                                                updateColumnValue(result.tableName, columnName, "id", rowId, newValue);
+                                                result.bUpdated = true;
+                                                selectedCells.clear();
+                                                ImGui::CloseCurrentPopup();
+                                            }
+                                            ImGui::SameLine();
+                                            if (ImGui::Button("取消")) {
+                                                ImGui::CloseCurrentPopup();
+                                            }
+                                            if (ImGui::MenuItem("删除此行")) {
+                                                deleteColumn(result.tableName, "id", rowId);
+                                                result.bUpdated = true;
+                                                selectedCells.clear();
+                                                ImGui::CloseCurrentPopup();
+                                            }
+                                        } else {
+                                            if (ImGui::MenuItem("批量删除")) {
+                                                for (const auto& cell : selectedCells) {
+                                                    deleteColumn(result.tableName, "id", cell.first);
+                                                }
+                                                result.bUpdated = true;
+                                                selectedCells.clear();
+                                                ImGui::CloseCurrentPopup();
+                                            }
+                                            if (ImGui::MenuItem("取消所有选择")) {
+                                                selectedCells.clear();
+                                                ImGui::CloseCurrentPopup();
+                                            }
                                         }
+
                                         ImGui::EndPopup();
                                     }
                                 }
                             }
+
                             ImGui::EndTable();
                         }
                     } catch (sql::SQLException& e) {
@@ -214,7 +233,6 @@ void GenerateTable(std::vector<QueryResult>& queryResults) {
                     }
                 }
 
-                // 如果 Tab 被关闭，则从 queryResults 中删除此项
                 if (!result.bTabOpen) {
                     queryResults.erase(queryResults.begin() + i);
                     --i;

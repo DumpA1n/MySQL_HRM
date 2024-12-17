@@ -29,7 +29,7 @@ public:
             pstmt->execute();
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in generatePayroll: " << e.what() << std::endl;
+            LOGE("Error in generatePayroll: %s", e.what());
         }
     }
 
@@ -43,7 +43,7 @@ public:
             pstmt->execute();
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in updatePayroll: " << e.what() << std::endl;
+            LOGE("Error in updatePayroll: %s", e.what());
         }
     }
 
@@ -56,7 +56,7 @@ public:
             pstmt->execute();
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in deletePayroll: " << e.what() << std::endl;
+            LOGE("Error in deletePayroll: %s", e.what());
         }
     }
 
@@ -75,7 +75,7 @@ public:
             delete res;
             delete pstmt;
         } catch (sql::SQLException& e) {
-            std::cerr << "Error in getPayroll: " << e.what() << std::endl;
+            LOGE("Error in getPayroll: %s", e.what());
         }
     }
 };
