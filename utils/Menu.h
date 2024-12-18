@@ -52,19 +52,6 @@ void ShowMenu() {
             }
         }
 
-        if (curLoginUser.role == "admin" && ImGui::CollapsingHeader("创键员工账号")) {
-            static int id;
-            static char username[128];
-            static char password[128];
-
-            ImGui::InputInt("ID##IDaddtouser", &id);
-            ImGui::InputText("用户名##UNaddtouser", username, sizeof(username));
-            ImGui::InputText("密码##PWaddtouser", password, sizeof(password));
-            if (ImGui::Button("添加##addEmployeetoUser")) {
-                mgr.emplmgr->addEmployeeToUsers(id, username, password);
-            }
-        }
-
         if (ImGui::CollapsingHeader("查询员工")) {
             string query = "select * from Employees";
             if (curLoginUser.role == "user")
@@ -74,8 +61,10 @@ void ShowMenu() {
             static bool useCustomQuery = false;
             static char customQuery[1024] = "select * from Employees";
             ImGui::Checkbox("使用自定义SQL", &useCustomQuery);
-            if (useCustomQuery) {
+            if (ImGui::IsItemHovered(ImGuiHoveredFlags_DelayShort | ImGuiHoveredFlags_NoSharedDelay))
                 ImGui::SetTooltip("TABLE Employees \nid INT AUTO_INCREMENT PRIMARY KEY \nname VARCHAR(255) \nid_card VARCHAR(20) \ncontact VARCHAR(50) \naddress VARCHAR(255) \nposition VARCHAR(100) \ndepartment VARCHAR(100) \nhire_date DATE \neducation_background TEXT \nwork_experience TEXT \nemergency_contact VARCHAR(255)");
+
+            if (useCustomQuery) {
                 ImGui::InputTextMultiline("##customQuery1", customQuery, sizeof(customQuery), ImVec2(300.0f, 100.0f));
             }
             if (ImGui::Button("查询##Employees1")) {
@@ -88,6 +77,19 @@ void ShowMenu() {
             ImGui::SameLine();
             if (ImGui::Button("清除所有查询结果")) {
                 queryResults.clear();
+            }
+        }
+
+        if (curLoginUser.role == "admin" && ImGui::CollapsingHeader("创键员工账号")) {
+            static int id;
+            static char username[128];
+            static char password[128];
+
+            ImGui::InputInt("ID##IDaddtouser", &id);
+            ImGui::InputText("用户名##UNaddtouser", username, sizeof(username));
+            ImGui::InputText("密码##PWaddtouser", password, sizeof(password));
+            if (ImGui::Button("添加##addEmployeetoUser")) {
+                mgr.emplmgr->addEmployeeToUsers(id, username, password);
             }
         }
 
