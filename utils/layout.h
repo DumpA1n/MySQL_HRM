@@ -54,15 +54,45 @@ unordered_map<string, string> translationMap = {
     {"work_experience", "工作经验"},
     {"emergency_contact", "紧急联系人"},
 
+    {"employee_id", "员工ID"},
+
     {"job_id", "职位编号"},
     {"candidate_name", "姓名"},
     {"candidate_email", "邮箱"},
-    {"resume", "简历"},
+    {"candidate_phone", "手机号"},
+    {"resume", "简历内容"},
     {"status", "状态"},
+    {"application_date", "投递时间"},
+    {"score", "评分"},
+
+    {"title", "标题"},
+    {"description", "描述"},
+    {"requirements", "需求"},
+    {"salary_range", "薪资范围"},
 
     {"application_id", "简历编号"},
-    {"interview_date", "面试日期"},
     {"reminder_sent", "是否发送提醒"},
+
+    {"attendance_date", "签到日期"},
+    {"earliest_check_in_time", "早签到时间"},
+    {"latest_check_in_time", "晚签到时间"},
+    {"first_status", "早签到状态"},
+    {"second_status", "晚签到状态"},
+
+    {"month", "月份"},
+    {"amount", "￥"},
+
+    {"review_period", "评估时间"},
+
+    {"course_id", "课程ID"},
+    {"course_name", "课程名称"},
+
+    {"start_date", "开始时间"},
+    {"end_date", "结束时间"},
+    {"leave_type", "请假类型"},
+    {"leave_reason", "请假原因"},
+
+    {"reimbursement_type", "报销类型"},
 };
 
 vector<unique_ptr<sql::ResultSet>> resList;

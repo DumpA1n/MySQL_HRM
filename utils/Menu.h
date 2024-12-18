@@ -242,9 +242,22 @@ void ShowMenu() {
             }
 
             if (ImGui::Button("查询考勤")) {
-                static std::string query = "SELECT * FROM AttendanceStatus";
-                if (curLoginUser.role == "user")
-                    query = "SELECT * FROM AttendanceStatus WHERE employee_id = " + to_string(curLoginUser.employeeId);
+                static string query = R"(
+                    SELECT AttendanceStatus.id, AttendanceStatus.employee_id, Employees.name, AttendanceStatus.attendance_date, AttendanceStatus.earliest_check_in_time, AttendanceStatus.latest_check_in_time, AttendanceStatus.first_status, AttendanceStatus.second_status
+                    FROM AttendanceStatus
+                    INNER JOIN Employees ON AttendanceStatus.employee_id = Employees.id
+                )";
+                if (curLoginUser.role == "user") {
+                    query = R"(
+                        SELECT AttendanceStatus.id, AttendanceStatus.employee_id, Employees.name, AttendanceStatus.attendance_date, AttendanceStatus.earliest_check_in_time, AttendanceStatus.latest_check_in_time, AttendanceStatus.first_status, AttendanceStatus.second_status
+                        FROM AttendanceStatus
+                        INNER JOIN Employees ON AttendanceStatus.employee_id = Employees.id
+                        WHERE AttendanceStatus.employee_id = )" + to_string(curLoginUser.employeeId);
+                }
+
+                // static std::string query = "SELECT * FROM AttendanceStatus";
+                // if (curLoginUser.role == "user")
+                //     query = "SELECT * FROM AttendanceStatus WHERE employee_id = " + to_string(curLoginUser.employeeId);
                 queryResults.push_back(QueryResult(query, "AttendanceStatus", std::move(mgr.attemgr->executeQuery(query.c_str()))));
             }
         }
@@ -387,8 +400,6 @@ void ShowMenu() {
 
             if (ImGui::Button("查询##4")) {
                 static string query = "SELECT * FROM TrainingCourses";
-                if (curLoginUser.role == "user")
-                    query = "SELECT * FROM TrainingCourses WHERE employee_id = " + to_string(curLoginUser.employeeId);
                 queryResults.push_back(QueryResult(query, "TrainingCourses", std::move(mgr.traimgr->executeQuery(query.c_str()))));
             }
         }
@@ -407,9 +418,20 @@ void ShowMenu() {
             }
 
             if (ImGui::Button("查询##5")) {
-                static string query = "SELECT * FROM Enrollments";
-                if (curLoginUser.role == "user")
-                    query = "SELECT * FROM Enrollments WHERE employee_id = " + to_string(curLoginUser.employeeId);
+                static string query = R"(
+                    SELECT Enrollments.id, Enrollments.employee_id, Employees.name, Enrollments.course_id, TrainingCourses.course_name
+                    FROM Enrollments
+                    INNER JOIN Employees ON Enrollments.employee_id = Employees.id
+                    INNER JOIN TrainingCourses ON Enrollments.course_id = TrainingCourses.id
+                )";
+                if (curLoginUser.role == "user") {
+                    query = R"(
+                        SELECT Enrollments.id, Enrollments.employee_id, Employees.name, Enrollments.course_id, TrainingCourses.course_name
+                        FROM Enrollments
+                        INNER JOIN Employees ON Enrollments.employee_id = Employees.id
+                        INNER JOIN TrainingCourses ON Enrollments.course_id = TrainingCourses.id
+                        WHERE Enrollments.employee_id = )" + to_string(curLoginUser.employeeId);
+                }
                 queryResults.push_back(QueryResult(query, "Enrollments", std::move(mgr.traimgr->executeQuery(query.c_str()))));
             }
         }
@@ -433,56 +455,71 @@ void ShowMenu() {
 
 
 // #################################################### 员工服务 ####################################################
-// 员工自助服务模块
     if (ImGui::CollapsingHeader("员工服务")) {
         ImGui::Indent(30.0f);
 
+        // 请假管理
         if (ImGui::CollapsingHeader("请假管理")) {
             static int employee_id;
             static char start_date[32];
             static char end_date[32];
+            static int leave_type = 0;
+            static char leave_reason[256] = "";
 
             if (curLoginUser.role == "user")
                 *reinterpret_cast<int*>(&employee_id) = curLoginUser.employeeId;
+
             ImGui::InputInt("员工ID##EmployeeServiceManager1", &employee_id);
             ImGui::InputText("开始日期", start_date, sizeof(start_date));
             ImGui::InputText("结束日期", end_date, sizeof(end_date));
 
+            const char* leave_types[] = { "病假", "事假", "其他" };
+            ImGui::Combo("请假类型", &leave_type, leave_types, IM_ARRAYSIZE(leave_types));
+
+            ImGui::InputText("请假原因", leave_reason, sizeof(leave_reason));
+
             if (ImGui::Button("提交请假申请")) {
-                mgr.emplsvcmgr->submitLeaveRequest(employee_id, start_date, end_date);
+                mgr.emplsvcmgr->submitLeaveRequest(employee_id, start_date, end_date, leave_type + 1, leave_reason);
             }
 
             if (ImGui::Button("查询请假申请")) {
-                static std::string query = "SELECT * FROM LeaveRequests";
+                static std::string query = "SELECT LeaveRequests.id, Employees.name, LeaveRequests.start_date, LeaveRequests.end_date, LeaveRequests.leave_type, LeaveRequests.leave_reason, LeaveRequests.status FROM LeaveRequests INNER JOIN Employees ON LeaveRequests.employee_id = Employees.id";
                 if (curLoginUser.role == "user")
-                    query = "SELECT * FROM LeaveRequests WHERE employee_id = " + to_string(curLoginUser.employeeId);
+                    query = "SELECT LeaveRequests.id, Employees.name, LeaveRequests.start_date, LeaveRequests.end_date, LeaveRequests.leave_type, LeaveRequests.leave_reason, LeaveRequests.status FROM LeaveRequests INNER JOIN Employees ON LeaveRequests.employee_id = Employees.id WHERE LeaveRequests.employee_id = " + to_string(curLoginUser.employeeId);
                 queryResults.push_back(QueryResult(query, "LeaveRequests", std::move(mgr.emplsvcmgr->executeQuery(query.c_str()))));
             }
         }
 
+        // 报销管理
         if (ImGui::CollapsingHeader("报销管理")) {
             static int employee_id;
-            static char amount[32];
+            static double amount;
+            static int reimbursement_type = 0;
 
             if (curLoginUser.role == "user")
                 *reinterpret_cast<int*>(&employee_id) = curLoginUser.employeeId;
+
             ImGui::InputInt("员工ID##EmployeeServiceManager2", &employee_id);
-            ImGui::InputText("报销金额", amount, sizeof(amount));
+            ImGui::InputDouble("报销金额", &amount);
+
+            const char* reimbursement_types[] = { "交通费", "住宿费", "餐饮费", "其他" };
+            ImGui::Combo("报销类型", &reimbursement_type, reimbursement_types, IM_ARRAYSIZE(reimbursement_types));
 
             if (ImGui::Button("提交报销申请")) {
-                mgr.emplsvcmgr->submitReimbursement(employee_id, stod(amount));
+                mgr.emplsvcmgr->submitReimbursement(employee_id, amount, reimbursement_type + 1);
             }
 
             if (ImGui::Button("查询报销申请")) {
-                static std::string query = "SELECT * FROM Reimbursements";
+                static std::string query = "SELECT Reimbursements.id, Employees.name, Reimbursements.amount, Reimbursements.reimbursement_type, Reimbursements.status FROM Reimbursements INNER JOIN Employees ON Reimbursements.employee_id = Employees.id";
                 if (curLoginUser.role == "user")
-                    query = "SELECT * FROM Reimbursements WHERE employee_id = " + to_string(curLoginUser.employeeId);
+                    query = "SELECT Reimbursements.id, Employees.name, Reimbursements.amount, Reimbursements.reimbursement_type, Reimbursements.status FROM Reimbursements INNER JOIN Employees ON Reimbursements.employee_id = Employees.id WHERE Reimbursements.employee_id = " + to_string(curLoginUser.employeeId);
                 queryResults.push_back(QueryResult(query, "Reimbursements", std::move(mgr.emplsvcmgr->executeQuery(query.c_str()))));
             }
         }
 
         ImGui::Unindent(30.0f);
     }
+
 
 
     RenderDataAnalysisPanel(mgr.analmgr);
