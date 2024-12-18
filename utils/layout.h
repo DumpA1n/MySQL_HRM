@@ -165,90 +165,101 @@ void GenerateTable(std::vector<QueryResult>& queryResults) {
                             static std::map<int, std::map<int, std::string>> editValues; // 存储待编辑值
 
                             while (res->next()) {
-                                ImGui::TableNextRow(0, 30.0f);
-                                int rowId = res->getInt(1);
-
+                                bool showRow = false;
+                                // 关键字过滤
                                 for (int col = 1; col <= colCount; ++col) {
-                                    ImGui::TableSetColumnIndex(col - 1);
-                                    std::pair<int, int> cellId = {rowId, col};
-                                    bool selected = selectedCells.count(cellId) > 0;
-
-                                    if (ImGui::Selectable((res->getString(col) + "##" + std::to_string(rowId) + std::to_string(col)).c_str(), selected, ImGuiSelectableFlags_SpanAllColumns)) {
-                                        if (selected) {
-                                            selectedCells.erase(cellId);
-                                        } else {
-                                            selectedCells.insert(cellId);
-                                        }
+                                    if (res->getString(col).find(filterKeyword) != std::string::npos) {
+                                        showRow = true;
+                                        break;
                                     }
+                                }
 
-                                    // 右键菜单
-                                    if (!selectedCells.empty() && ImGui::BeginPopupContextItem(("CellContextMenu##" + std::to_string(rowId) + std::to_string(col)).c_str())) {
-                                        if (selectedCells.size() == 1) {
-                                            if (ImGui::Button("编辑此行")) {
-                                                // 初始化待编辑值
-                                                editValues[rowId].clear();
-                                                for (int editCol = 1; editCol <= colCount; ++editCol) {
-                                                    editValues[rowId][editCol] = res->getString(editCol);
-                                                }
-                                                ImGui::OpenPopup(("EditRowPopup##" + std::to_string(rowId)).c_str());
+                                if (showRow) {
+                                    ImGui::TableNextRow(0, 30.0f);
+                                    int rowId = res->getInt(1);
+
+                                    for (int col = 1; col <= colCount; ++col) {
+                                        ImGui::TableSetColumnIndex(col - 1);
+                                        std::pair<int, int> cellId = {rowId, col};
+                                        bool selected = selectedCells.count(cellId) > 0;
+
+                                        if (ImGui::Selectable((res->getString(col) + "##" + std::to_string(rowId) + std::to_string(col)).c_str(), selected, ImGuiSelectableFlags_SpanAllColumns)) {
+                                            if (selected) {
+                                                selectedCells.erase(cellId);
+                                            } else {
+                                                selectedCells.insert(cellId);
                                             }
+                                        }
 
-                                            // 编辑弹窗逻辑
-                                            if (ImGui::BeginPopup(("EditRowPopup##" + std::to_string(rowId)).c_str())) {
-                                                for (int editCol = 1; editCol <= colCount; ++editCol) {
-                                                    std::string columnName = metaData->getColumnLabel(editCol);
-                                                    std::string& cellValue = editValues[rowId][editCol];
-                                                    ImGui::InputText(("##Edit" + columnName).c_str(), &cellValue[0], cellValue.size() + 128);
-                                                    // cellValue[cellValue.length()] = '\0';
-                                                    ImGui::SameLine();
-                                                    ImGui::Text("%s", columnName.c_str());
+                                        // 右键菜单
+                                        if (!selectedCells.empty() && ImGui::BeginPopupContextItem(("CellContextMenu##" + std::to_string(rowId) + std::to_string(col)).c_str())) {
+                                            if (selectedCells.size() == 1) {
+                                                if (ImGui::Button("编辑此行")) {
+                                                    // 初始化待编辑值
+                                                    editValues[rowId].clear();
+                                                    for (int editCol = 1; editCol <= colCount; ++editCol) {
+                                                        editValues[rowId][editCol] = res->getString(editCol);
+                                                    }
+                                                    ImGui::OpenPopup(("EditRowPopup##" + std::to_string(rowId)).c_str());
                                                 }
 
-                                                if (ImGui::Button("保存修改")) {
+                                                // 编辑弹窗逻辑
+                                                if (ImGui::BeginPopup(("EditRowPopup##" + std::to_string(rowId)).c_str())) {
                                                     for (int editCol = 1; editCol <= colCount; ++editCol) {
                                                         std::string columnName = metaData->getColumnLabel(editCol);
-                                                        char buf[1024];
-                                                        std::string value = editValues[rowId][editCol];
-                                                        strncpy(buf, value.c_str(), sizeof(buf) - 1);
-                                                        buf[sizeof(buf) - 1] = '\0';
-                                                        // LOGI("tableName: %s, columnName: %s, rowId: %d, newValue: %s, size: %u", result.tableName.c_str(), columnName.c_str(), rowId, value.c_str(), value.length());
-                                                        updateColumnValue(result.tableName, columnName, "id", rowId, buf);
+                                                        std::string& cellValue = editValues[rowId][editCol];
+                                                        ImGui::InputText(("##Edit" + columnName).c_str(), &cellValue[0], cellValue.size() + 128);
+                                                        // cellValue[cellValue.length()] = '\0';
+                                                        ImGui::SameLine();
+                                                        ImGui::Text("%s", columnName.c_str());
+                                                    }
+
+                                                    if (ImGui::Button("保存修改")) {
+                                                        for (int editCol = 1; editCol <= colCount; ++editCol) {
+                                                            std::string columnName = metaData->getColumnLabel(editCol);
+                                                            char buf[1024];
+                                                            std::string value = editValues[rowId][editCol];
+                                                            strncpy(buf, value.c_str(), sizeof(buf) - 1);
+                                                            buf[sizeof(buf) - 1] = '\0';
+                                                            // LOGI("tableName: %s, columnName: %s, rowId: %d, newValue: %s, size: %u", result.tableName.c_str(), columnName.c_str(), rowId, value.c_str(), value.length());
+                                                            updateColumnValue(result.tableName, columnName, "id", rowId, buf);
+                                                        }
+                                                        result.bUpdated = true;
+                                                        editValues.erase(rowId);
+                                                        ImGui::CloseCurrentPopup();
+                                                    }
+
+                                                    ImGui::SameLine();
+                                                    if (ImGui::Button("取消")) {
+                                                        editValues.erase(rowId);
+                                                        ImGui::CloseCurrentPopup();
+                                                    }
+
+                                                    ImGui::EndPopup();
+                                                }
+
+                                                if (ImGui::Button("删除此行")) {
+                                                    deleteColumn(result.tableName, "id", rowId);
+                                                    result.bUpdated = true;
+                                                    selectedCells.clear();
+                                                    ImGui::CloseCurrentPopup();
+                                                }
+                                            } else if (selectedCells.size() > 1) {
+                                                if (ImGui::Button("批量删除")) {
+                                                    for (const auto& cell : selectedCells) {
+                                                        deleteColumn(result.tableName, "id", cell.first);
                                                     }
                                                     result.bUpdated = true;
-                                                    editValues.erase(rowId);
+                                                    selectedCells.clear();
                                                     ImGui::CloseCurrentPopup();
                                                 }
-
-                                                ImGui::SameLine();
-                                                if (ImGui::Button("取消")) {
-                                                    editValues.erase(rowId);
-                                                    ImGui::CloseCurrentPopup();
-                                                }
-
-                                                ImGui::EndPopup();
                                             }
-
-                                            if (ImGui::Button("删除此行")) {
-                                                deleteColumn(result.tableName, "id", rowId);
-                                                result.bUpdated = true;
-                                                selectedCells.clear();
+                                            if (ImGui::Button("取消选择")) {
+                                                    selectedCells.clear();
                                                 ImGui::CloseCurrentPopup();
                                             }
-                                        } else if (selectedCells.size() > 1) {
-                                            if (ImGui::Button("批量删除")) {
-                                                for (const auto& cell : selectedCells) {
-                                                    deleteColumn(result.tableName, "id", cell.first);
-                                                }
-                                                result.bUpdated = true;
-                                                selectedCells.clear();
-                                                ImGui::CloseCurrentPopup();
-                                            }
+                                            ImGui::EndPopup();
                                         }
-                                        if (ImGui::Button("取消选择")) {
-                                                selectedCells.clear();
-                                            ImGui::CloseCurrentPopup();
-                                        }
-                                        ImGui::EndPopup();
                                     }
                                 }
                             }
