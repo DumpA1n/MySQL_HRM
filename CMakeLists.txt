@@ -24,6 +24,7 @@ set(MySQL_DIR "C:/Program Files/MySQL/MySQL Connector C++ 9.0")
 # 查找头文件目录
 include_directories(
     ${CMAKE_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/include
     ${CMAKE_SOURCE_DIR}/utils
     ${CMAKE_SOURCE_DIR}/Modules
     ${CMAKE_SOURCE_DIR}/UITables
@@ -61,13 +62,18 @@ set(SOURCES
 )
 
 # 添加可执行文件
-add_executable(MySQL_HRM ${SOURCES})
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 # 设置输出路径和文件名
-set_target_properties(MySQL_HRM PROPERTIES
+set_target_properties(${PROJECT_NAME} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin
     OUTPUT_NAME "MySQL_HRM"
 )
 
+# 设置静态库路径
+set(LIBS
+    ${CMAKE_SOURCE_DIR}/include/fmt/lib/fmt.lib
+)
+
 # 链接库文件
-target_link_libraries(MySQL_HRM libssl libcrypto mysqlcppconn mysqlcppconnx glfw3 gdi32 opengl32 imm32)
+target_link_libraries(${PROJECT_NAME} ${LIBS} libssl libcrypto mysqlcppconn mysqlcppconnx glfw3 gdi32 opengl32 imm32)

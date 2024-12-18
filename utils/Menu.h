@@ -134,6 +134,10 @@ void ShowMenu() {
             if (ImGui::Button("发布")) {
                 mgr.recumgr->addJobPost(title, description, requirements, salary_range);
             }
+            ImGui::SameLine();
+            if (ImGui::Button("随机生成")) {
+                mgr.recumgr->generateRandomJobPosts(10);
+            }
             if (ImGui::Button("查看职位")) {
                 static string query = "SELECT * FROM JobPosts";
                 queryResults.push_back(QueryResult(query, "JobPosts", std::move(mgr.recumgr->executeQuery(query.c_str()))));
@@ -209,16 +213,16 @@ void ShowMenu() {
         ImGui::Indent(30.0f);
 
         if (ImGui::CollapsingHeader("考勤记录")) {
-            static char employee_id[32];
+            static int employee_id;
             static char attendance_date[32];
             static char status[16];
 
-            ImGui::InputText("员工ID##AttendanceManager1", employee_id, sizeof(employee_id));
+            ImGui::InputInt("员工ID##AttendanceManager1", &employee_id);
             ImGui::InputText("考勤日期", attendance_date, sizeof(attendance_date));
             ImGui::InputText("状态 (Present/Absent)", status, sizeof(status));
 
             if (ImGui::Button("记录考勤")) {
-                mgr.attemgr->recordAttendance(stoi(employee_id), attendance_date, status);
+                mgr.attemgr->recordAttendance(employee_id, attendance_date, status);
             }
 
             if (ImGui::Button("查询考勤")) {

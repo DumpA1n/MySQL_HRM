@@ -8,6 +8,8 @@
 #include <unordered_set>
 #include <random>
 
+#include "fmt/core.h"
+
 bool debugMode = true;
 int screenW, screenH;
 
