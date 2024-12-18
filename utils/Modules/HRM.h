@@ -111,6 +111,7 @@ void updateColumnValue(const std::string& tableName, const std::string& columnNa
             LOGE("表名、列名或键名不能为空");
             return;
         }
+        LOGI("新值 = %s", newValue.c_str());
 
         // 动态生成更新语句
         std::string updateQuery = "UPDATE " + tableName + " SET " + columnName + " = ? WHERE " + keyColumn + " = ?";

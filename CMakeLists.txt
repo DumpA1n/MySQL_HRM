@@ -28,6 +28,7 @@ include_directories(
     ${CMAKE_SOURCE_DIR}/utils
     ${CMAKE_SOURCE_DIR}/Modules
     ${CMAKE_SOURCE_DIR}/UITables
+    ${CMAKE_SOURCE_DIR}/include/implot
     ${CMAKE_SOURCE_DIR}/include/imgui
     ${CMAKE_SOURCE_DIR}/include/imgui/backends
     ${CMAKE_SOURCE_DIR}/include/imgui/examples/libs/glfw/include
@@ -52,6 +53,9 @@ set(IMGUI_DIR "${CMAKE_SOURCE_DIR}/include/imgui")
 # 添加所有源文件
 set(SOURCES
     ${CMAKE_SOURCE_DIR}/main.cpp
+    ${CMAKE_SOURCE_DIR}/include/implot/implot.cpp
+    ${CMAKE_SOURCE_DIR}/include/implot/implot_items.cpp
+    ${CMAKE_SOURCE_DIR}/include/implot/implot_demo.cpp
     ${CMAKE_SOURCE_DIR}/include/imgui/imgui.cpp
     ${CMAKE_SOURCE_DIR}/include/imgui/imgui_demo.cpp
     ${CMAKE_SOURCE_DIR}/include/imgui/imgui_draw.cpp

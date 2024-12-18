@@ -9,6 +9,7 @@
 #include <random>
 
 #include "fmt/core.h"
+#include "implot/implot.h"
 
 bool debugMode = true;
 int screenW, screenH;

@@ -272,19 +272,24 @@ void ShowMenu() {
         ImGui::Indent(30.0f);
 
         if (ImGui::CollapsingHeader("生成工资单")) {
-            static char employee_id[32];
+            static int employee_id;
             static char month[16];
-            static char amount[16];
-            ImGui::InputText("员工ID##PayrollManager1", employee_id, sizeof(employee_id));
+            static double amount;
+
+            if (curLoginUser.role == "user")
+                *reinterpret_cast<int*>(&employee_id) = curLoginUser.employeeId;
+            ImGui::InputInt("员工ID##PayrollManager1", &employee_id);
             ImGui::InputText("月份 (YYYY-MM)", month, sizeof(month));
-            ImGui::InputText("工资", amount, sizeof(amount));
+            ImGui::InputDouble("工资", &amount);
 
             if (ImGui::Button("生成")) {
-                mgr.payrmgr->generatePayroll(stoi(employee_id), month, stod(amount));
+                mgr.payrmgr->generatePayroll(employee_id, month, amount);
             }
 
             if (ImGui::Button("查询##3")) {
                 static string query = "SELECT * FROM Payroll";
+                if (curLoginUser.role == "user")
+                    query = "SELECT * FROM Payroll WHERE employee_id = " + to_string(curLoginUser.employeeId);
                 queryResults.push_back(QueryResult(query, "Payroll", std::move(mgr.payrmgr->executeQuery(query.c_str()))));
             }
         }
@@ -312,28 +317,32 @@ void ShowMenu() {
 
 
 // #################################################### 绩效评估 ####################################################
-    if (ImGui::CollapsingHeader("绩效评估"))
+    if (ImGui::CollapsingHeader("绩效评估##1"))
     {
         ImGui::Indent(30.0f);
 
-        if (ImGui::CollapsingHeader("绩效评估")) {
-            static char employee_id[32];
+        // if (ImGui::CollapsingHeader("绩效评估##2")) {
+            static int employee_id;
             static char review_period[32];
-            static char score[16];
+            static int score;
 
-            ImGui::InputText("员工ID##PerformanceManager1", employee_id, sizeof(employee_id));
+            if (curLoginUser.role == "user")
+                *reinterpret_cast<int*>(&employee_id) = curLoginUser.employeeId;
+            ImGui::InputInt("员工ID##PerformanceManager1", &employee_id);
             ImGui::InputText("评估周期", review_period, sizeof(review_period));
-            ImGui::InputText("评分 (0-100)", score, sizeof(score));
+            ImGui::InputInt("评分 (0-100)", &score);
 
             if (ImGui::Button("提交评估")) {
-                mgr.perfmgr->submitPerformanceReview(stoi(employee_id), review_period, stoi(score));
+                mgr.perfmgr->submitPerformanceReview(employee_id, review_period, score);
             }
 
             if (ImGui::Button("查询评估")) {
                 static string query = "SELECT * FROM Performance";
+                if (curLoginUser.role == "user")
+                    query = "SELECT * FROM Performance WHERE employee_id = " + to_string(curLoginUser.employeeId);
                 queryResults.push_back(QueryResult(query, "Performance", std::move(mgr.perfmgr->executeQuery(query.c_str()))));
             }
-        }
+        // }
 
         ImGui::Unindent(30.0f);
     }
@@ -376,23 +385,29 @@ void ShowMenu() {
 
             if (ImGui::Button("查询##4")) {
                 static string query = "SELECT * FROM TrainingCourses";
+                if (curLoginUser.role == "user")
+                    query = "SELECT * FROM TrainingCourses WHERE employee_id = " + to_string(curLoginUser.employeeId);
                 queryResults.push_back(QueryResult(query, "TrainingCourses", std::move(mgr.traimgr->executeQuery(query.c_str()))));
             }
         }
 
         if (ImGui::CollapsingHeader("报名培训课程")) {
-            static char employee_id[32];
-            static char course_id[32];
+            static int employee_id;
+            static int course_id;
 
-            ImGui::InputText("员工ID##TrainingManager1", employee_id, sizeof(employee_id));
-            ImGui::InputText("课程ID", course_id, sizeof(course_id));
+            if (curLoginUser.role == "user")
+                *reinterpret_cast<int*>(&employee_id) = curLoginUser.employeeId;
+            ImGui::InputInt("员工ID##TrainingManager1", &employee_id);
+            ImGui::InputInt("课程ID", &course_id);
 
             if (ImGui::Button("报名")) {
-                mgr.traimgr->enrollInCourse(stoi(employee_id), stoi(course_id));
+                mgr.traimgr->enrollInCourse(employee_id, course_id);
             }
 
             if (ImGui::Button("查询##5")) {
                 static string query = "SELECT * FROM Enrollments";
+                if (curLoginUser.role == "user")
+                    query = "SELECT * FROM Enrollments WHERE employee_id = " + to_string(curLoginUser.employeeId);
                 queryResults.push_back(QueryResult(query, "Enrollments", std::move(mgr.traimgr->executeQuery(query.c_str()))));
             }
         }
@@ -416,41 +431,50 @@ void ShowMenu() {
 
 
 // #################################################### 员工服务 ####################################################
-    if (ImGui::CollapsingHeader("员工服务"))
-    {
+// 员工自助服务模块
+    if (ImGui::CollapsingHeader("员工服务")) {
         ImGui::Indent(30.0f);
 
-        if (ImGui::CollapsingHeader("休假管理")) {
-            static char employee_id[32];
+        if (ImGui::CollapsingHeader("请假管理")) {
+            static int employee_id;
             static char start_date[32];
             static char end_date[32];
 
-            ImGui::InputText("员工ID##EmployeeServiceManager1", employee_id, sizeof(employee_id));
+            if (curLoginUser.role == "user")
+                *reinterpret_cast<int*>(&employee_id) = curLoginUser.employeeId;
+            ImGui::InputInt("员工ID##EmployeeServiceManager1", &employee_id);
             ImGui::InputText("开始日期", start_date, sizeof(start_date));
             ImGui::InputText("结束日期", end_date, sizeof(end_date));
 
-            if (ImGui::Button("提交申请")) {
-                mgr.emplsvcmgr->submitLeaveRequest(stoi(employee_id), start_date, end_date);
+            if (ImGui::Button("提交请假申请")) {
+                mgr.emplsvcmgr->submitLeaveRequest(employee_id, start_date, end_date);
             }
 
-            if (ImGui::Button("查询申请")) {
-                static string query = "SELECT * FROM LeaveRequests";
+            if (ImGui::Button("查询请假申请")) {
+                static std::string query = "SELECT * FROM LeaveRequests";
+                if (curLoginUser.role == "user")
+                    query = "SELECT * FROM LeaveRequests WHERE employee_id = " + to_string(curLoginUser.employeeId);
                 queryResults.push_back(QueryResult(query, "LeaveRequests", std::move(mgr.emplsvcmgr->executeQuery(query.c_str()))));
             }
         }
 
         if (ImGui::CollapsingHeader("报销管理")) {
-            static char employee_id[32];
+            static int employee_id;
             static char amount[32];
-            ImGui::InputText("员工ID##EmployeeServiceManager2", employee_id, sizeof(employee_id));
+
+            if (curLoginUser.role == "user")
+                *reinterpret_cast<int*>(&employee_id) = curLoginUser.employeeId;
+            ImGui::InputInt("员工ID##EmployeeServiceManager2", &employee_id);
             ImGui::InputText("报销金额", amount, sizeof(amount));
 
-            if (ImGui::Button("提交报销")) {
-                mgr.emplsvcmgr->submitReimbursement(stoi(employee_id), stod(amount));
+            if (ImGui::Button("提交报销申请")) {
+                mgr.emplsvcmgr->submitReimbursement(employee_id, stod(amount));
             }
 
-            if (ImGui::Button("查询报销")) {
-                static string query = "SELECT * FROM Reimbursements";
+            if (ImGui::Button("查询报销申请")) {
+                static std::string query = "SELECT * FROM Reimbursements";
+                if (curLoginUser.role == "user")
+                    query = "SELECT * FROM Reimbursements WHERE employee_id = " + to_string(curLoginUser.employeeId);
                 queryResults.push_back(QueryResult(query, "Reimbursements", std::move(mgr.emplsvcmgr->executeQuery(query.c_str()))));
             }
         }
@@ -459,6 +483,7 @@ void ShowMenu() {
     }
 
 
+    RenderDataAnalysisPanel(mgr.analmgr);
 
     GenerateTable(queryResults);
     ShowDebugWindow();

@@ -1,12 +1,14 @@
 // 员工自助服务模块
 class EmployeeServiceManager : public HRM {
 public:
+    // 表结构保持不变
     const char* LeaveRequestsTable = R"(
         CREATE TABLE IF NOT EXISTS LeaveRequests (
             id INT AUTO_INCREMENT PRIMARY KEY,
             employee_id INT,
             start_date DATE,
             end_date DATE,
+            status ENUM('待处理', '通过', '不通过') DEFAULT '待处理',
             FOREIGN KEY (employee_id) REFERENCES Employees(id)
         );
     )";
@@ -16,6 +18,7 @@ public:
             id INT AUTO_INCREMENT PRIMARY KEY,
             employee_id INT,
             amount DECIMAL(10, 2),
+            status ENUM('待处理', '通过', '不通过') DEFAULT '待处理',
             FOREIGN KEY (employee_id) REFERENCES Employees(id)
         );
     )";
@@ -56,4 +59,33 @@ public:
             LOGE("Error in submitReimbursement: %s", e.what());
         }
     }
+
+    void updateLeaveRequestStatus(int request_id, const string& status) {
+        try {
+            sql::PreparedStatement* pstmt = tsql.con->prepareStatement(
+                "UPDATE LeaveRequests SET status = ? WHERE id = ?"
+            );
+            pstmt->setString(1, status);
+            pstmt->setInt(2, request_id);
+            pstmt->execute();
+            delete pstmt;
+        } catch (sql::SQLException& e) {
+            LOGE("Error in updateLeaveRequestStatus: %s", e.what());
+        }
+    }
+
+    void updateReimbursementStatus(int request_id, const string& status) {
+        try {
+            sql::PreparedStatement* pstmt = tsql.con->prepareStatement(
+                "UPDATE Reimbursements SET status = ? WHERE id = ?"
+            );
+            pstmt->setString(1, status);
+            pstmt->setInt(2, request_id);
+            pstmt->execute();
+            delete pstmt;
+        } catch (sql::SQLException& e) {
+            LOGE("Error in updateReimbursementStatus: %s", e.what());
+        }
+    }
 };
+

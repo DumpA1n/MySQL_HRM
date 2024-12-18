@@ -10,5 +10,6 @@
 #include "Modules/PerformanceManager.h"
 #include "Modules/TrainingManager.h"
 #include "Modules/EmployeeServiceManager.h"
+#include "Modules/DataAnalysisManager.h"
 
 #endif // MOUDULE_H
