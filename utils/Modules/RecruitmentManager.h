@@ -18,8 +18,11 @@ public:
             job_id INT,
             candidate_name VARCHAR(255),
             candidate_email VARCHAR(255),
+            candidate_phone VARCHAR(15),
             resume TEXT,
             status VARCHAR(20) DEFAULT 'Pending',
+            application_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+            score FLOAT DEFAULT 0.0,
             FOREIGN KEY (job_id) REFERENCES JobPosts(id)
         );
     )";
@@ -60,46 +63,82 @@ public:
         }
     }
 
-    void addRandomApplication(int job_id) {
-        auto RandomGenResume = [](int sig, string name = "") {
-            if (sig == 1) {
-                const vector<string> firstNames = {"John", "Jane", "Alex", "Chris", "Katie", "Michael", "Laura", "David", "Emily"};
-                const vector<string> lastNames = {"Smith", "Johnson", "Brown", "Davis", "Miller", "Wilson", "Moore", "Taylor", "Anderson"};
-                return firstNames[rand() % firstNames.size()] + " " + lastNames[rand() % lastNames.size()];
-            } else if (sig == 2) {
-                const vector<string> emailDomains = {"example.com", "testmail.com", "randomemail.org"};
-                string domain = emailDomains[rand() % emailDomains.size()];
-                string email = name;
-                std::replace(email.begin(), email.end(), ' ', '.');
-                return email + "@" + domain;
-            } else if (sig == 3) {
-                const vector<string> skills = {
-                    "C++ Programming", "Java Development", "Database Management", "MySQL Programming", "Project Management", 
-                    "Software Testing", "Web Development", "Data Analysis", "Machine Learning"
-                };
-                string resume = "Skills:\n";
-                for (int i = 0; i < 3; ++i) {  // 随机选择3个技能
-                    resume += "- " + skills[rand() % skills.size()] + "\n";
-                }
-                return resume;
-            }
+    void generateRandomApplications(int jobId, int numApplications = 5) {
+
+        // 候选人姓名模板
+        vector<string> nameTemplates = {
+            "张伟", "李强", "王芳", "刘洋", "陈杰", 
+            "杨敏", "赵磊", "黄丽", "周军", "吴静", 
+            "徐明", "孙超", "马红", "朱娜", "胡斌"
         };
-        srand((unsigned)time(0));
-        string name = RandomGenResume(1);
-        string email = RandomGenResume(2, name);
-        string resume = RandomGenResume(3);
+
+        // 邮箱域名模板
+        vector<string> emailDomains = {
+            "@gmail.com", "@qq.com", "@163.com", "@outlook.com", "@yahoo.com"
+        };
+
+        // 简历模板（简要技能和经历描述）
+        vector<string> resumeTemplates = {
+            "熟悉C++编程，具有3年开发经验，参与多个渲染引擎项目的研发与优化。",
+            "精通Python和SQL，在数据分析领域有丰富经验，熟悉数据可视化技术。",
+            "具备扎实的计算机图形学基础，参与过OpenGL和Vulkan项目开发。",
+            "有5年移动端开发经验，专注于跨平台图形性能优化。",
+            "热衷于人工智能和图形技术的结合，熟悉深度学习框架如TensorFlow和PyTorch。",
+            "在游戏引擎领域有多年经验，曾参与过知名引擎模块的开发。",
+            "对AR/VR技术有深入研究，熟悉3D建模和实时渲染算法。",
+            "具备嵌入式系统开发经验，擅长底层图形驱动和性能调优。",
+            "参与过云渲染技术的研发，擅长分布式系统和网络性能优化。",
+            "对计算机视觉有深入了解，熟悉OpenCV和深度学习相关算法。"
+        };
+
+        // 电话号码生成范围
+        int phoneStart = 13000000000;
+        int phoneEnd = 13999999999;
+
+        // 简历状态
+        vector<string> statuses = {
+            "待审核", "已通过", "已拒绝", "面试中", "候补"
+        };
 
         try {
-            sql::PreparedStatement* pstmt = tsql.con->prepareStatement("INSERT INTO Applications (job_id, candidate_name, candidate_email, resume) VALUES (?, ?, ?, ?)");
-            pstmt->setInt(1, job_id);
-            pstmt->setString(2, name);
-            pstmt->setString(3, email);
-            pstmt->setString(4, resume);
-            pstmt->execute();
+            sql::PreparedStatement* pstmt = tsql.con->prepareStatement(
+                "INSERT INTO Applications (job_id, candidate_name, candidate_email, candidate_phone, resume, status) "
+                "VALUES (?, ?, ?, ?, ?, ?)"
+            );
+
+            // 设置随机数种子
+            srand(time(nullptr));
+
+            for (int i = 0; i < numApplications; ++i) {
+                // 随机生成姓名
+                string name = nameTemplates[rand() % nameTemplates.size()];
+
+                // 随机生成邮箱
+                string email = name + to_string(rand() % 1000) + emailDomains[rand() % emailDomains.size()];
+
+                // 随机生成电话号码
+                string phone = to_string(phoneStart + rand() % (phoneEnd - phoneStart + 1));
+
+                // 随机选择简历内容
+                string resume = resumeTemplates[rand() % resumeTemplates.size()];
+
+                // 随机选择状态
+                string status = statuses[rand() % statuses.size()];
+
+                // 执行插入
+                pstmt->setInt(1, jobId);
+                pstmt->setString(2, name);
+                pstmt->setString(3, email);
+                pstmt->setString(4, phone);
+                pstmt->setString(5, resume);
+                pstmt->setString(6, status);
+                pstmt->execute();
+            }
+
             delete pstmt;
-            LOGI("随机简历生成成功");
+            LOGI("成功生成 %d 条随机申请记录", numApplications);
         } catch (sql::SQLException& e) {
-            LOGE("Error in addRandomApplication: %s", e.what());
+            LOGE("生成随机申请记录失败: %s", e.what());
         }
     }
 

@@ -134,6 +134,39 @@ void updateColumnValue(const std::string& tableName, const std::string& columnNa
     }
 }
 
+// 检查员工是否存在于 Employees 表
+bool employeeExists(int employee_id) {
+    try {
+        std::string query = "SELECT COUNT(*) FROM Employees WHERE id = ?";
+        sql::PreparedStatement* pstmt = tsql.con->prepareStatement(query);
+        pstmt->setInt(1, employee_id);
+        sql::ResultSet* res = pstmt->executeQuery();
+        res->next();
+        int count = res->getInt(1);
+        delete pstmt;
+        return count > 0;
+    } catch (sql::SQLException& e) {
+        LOGE("Error in employeeExists: %s", e.what());
+        return false;
+    }
+}
+
+string GetCurEmployeeName(int employee_id) {
+    try {
+        std::string query = "SELECT name FROM Employees WHERE id = ?";
+        sql::PreparedStatement* pstmt = tsql.con->prepareStatement(query);
+        pstmt->setInt(1, employee_id);
+        sql::ResultSet* res = pstmt->executeQuery();
+        res->next();
+        string name = res->getString(1);
+        delete pstmt;
+        return name;
+    } catch (sql::SQLException& e) {
+        LOGE("Error in employeeExists: %s", e.what());
+        return false;
+    }
+}
+
 string buildQuery(const string& field, const string& value, bool& hasCondition, bool like = false) {
     if (!value.empty()) {
         std::ostringstream condition;
@@ -150,4 +183,26 @@ string buildQuery(const string& field, const string& value, bool& hasCondition, 
         return condition.str();
     }
     return "";
+}
+
+// 获取当前日期
+std::string getCurrentDate() {
+    std::time_t t = std::time(0);
+    std::tm* now = std::localtime(&t);
+    
+    // 格式化当前日期为 "YYYY-MM-DD"
+    std::ostringstream oss;
+    oss << std::put_time(now, "%Y-%m-%d");
+    return oss.str();
+}
+
+// 获取当前时间
+std::string getCurrentTime() {
+    std::time_t t = std::time(0);
+    std::tm* now = std::localtime(&t);
+    
+    // 格式化当前时间为 "HH:MM:SS"
+    std::ostringstream oss;
+    oss << std::put_time(now, "%H:%M:%S");
+    return oss.str();
 }

@@ -170,7 +170,7 @@ void GenerateTable(std::vector<QueryResult>& queryResults) {
                                     std::pair<int, int> cellId = {rowId, col};
                                     bool selected = selectedCells.count(cellId) > 0;
 
-                                    if (ImGui::Selectable(res->getString(col).c_str(), selected, ImGuiSelectableFlags_SpanAllColumns)) {
+                                    if (ImGui::Selectable((res->getString(col) + "##" + std::to_string(rowId) + std::to_string(col)).c_str(), selected, ImGuiSelectableFlags_SpanAllColumns)) {
                                         if (selected) {
                                             selectedCells.erase(cellId);
                                         } else {
@@ -179,8 +179,8 @@ void GenerateTable(std::vector<QueryResult>& queryResults) {
                                     }
 
                                     // 右键菜单
-                                    if (ImGui::BeginPopupContextItem(("CellContextMenu##" + std::to_string(rowId) + std::to_string(col)).c_str())) {
-                                        if (selectedCells.empty()) {
+                                    if (!selectedCells.empty() && ImGui::BeginPopupContextItem(("CellContextMenu##" + std::to_string(rowId) + std::to_string(col)).c_str())) {
+                                        if (selectedCells.size() == 1) {
                                             if (ImGui::Button("编辑此行")) {
                                                 // 初始化待编辑值
                                                 editValues[rowId].clear();
@@ -225,7 +225,7 @@ void GenerateTable(std::vector<QueryResult>& queryResults) {
                                                 selectedCells.clear();
                                                 ImGui::CloseCurrentPopup();
                                             }
-                                        } else {
+                                        } else if (selectedCells.size() > 1) {
                                             if (ImGui::Button("批量删除")) {
                                                 for (const auto& cell : selectedCells) {
                                                     deleteColumn(result.tableName, "id", cell.first);
@@ -234,10 +234,10 @@ void GenerateTable(std::vector<QueryResult>& queryResults) {
                                                 selectedCells.clear();
                                                 ImGui::CloseCurrentPopup();
                                             }
-                                            if (ImGui::Button("取消选择")) {
+                                        }
+                                        if (ImGui::Button("取消选择")) {
                                                 selectedCells.clear();
-                                                ImGui::CloseCurrentPopup();
-                                            }
+                                            ImGui::CloseCurrentPopup();
                                         }
                                         ImGui::EndPopup();
                                     }

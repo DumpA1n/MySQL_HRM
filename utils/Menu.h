@@ -1,6 +1,10 @@
 #pragma once
 #ifndef MENU_H
 #define MENU_H
+#include <ctime>
+#include <iomanip>
+#include <sstream>
+#include <string>
 
 void ShowMenu() {
     if (!mgr.init)
@@ -63,6 +67,8 @@ void ShowMenu() {
 
         if (ImGui::CollapsingHeader("查询员工")) {
             string query = "select * from Employees";
+            if (curLoginUser.role == "user")
+                query = "SELECT * FROM Employees WHERE id = " + to_string(curLoginUser.employeeId);
             bool hasCondition = false;
 
             static bool useCustomQuery = false;
@@ -148,7 +154,7 @@ void ShowMenu() {
             static int job_id = 1;  // 默认为1号职位
             ImGui::InputInt("职位编号", &job_id);
             if (ImGui::Button("随机生成简历")) {
-                mgr.recumgr->addRandomApplication(job_id);
+                mgr.recumgr->generateRandomApplications(job_id);
             }
 
             if (ImGui::Button("查询##2")) {
@@ -175,6 +181,8 @@ void ShowMenu() {
 
         if (ImGui::CollapsingHeader("入职任务管理")) {
             static int employee_id;
+            if (curLoginUser.role == "user")
+                *reinterpret_cast<int*>(&employee_id) = curLoginUser.employeeId;
 
             ImGui::InputInt("员工编号", &employee_id);
 
@@ -215,19 +223,27 @@ void ShowMenu() {
         if (ImGui::CollapsingHeader("考勤记录")) {
             static int employee_id;
             static char attendance_date[32];
-            static char status[16];
+            static char check_in_time[16];
+
+            if (curLoginUser.role == "user")
+                *reinterpret_cast<int*>(&employee_id) = curLoginUser.employeeId;
+            strncpy(attendance_date, getCurrentDate().c_str(), sizeof(attendance_date) - 1);
+            strncpy(check_in_time, getCurrentTime().c_str(), sizeof(check_in_time) - 1);
 
             ImGui::InputInt("员工ID##AttendanceManager1", &employee_id);
             ImGui::InputText("考勤日期", attendance_date, sizeof(attendance_date));
-            ImGui::InputText("状态 (Present/Absent)", status, sizeof(status));
+            ImGui::InputText("签到时间", check_in_time, sizeof(check_in_time));
 
-            if (ImGui::Button("记录考勤")) {
-                mgr.attemgr->recordAttendance(employee_id, attendance_date, status);
+            if (ImGui::Button("签到")) {
+                mgr.attemgr->insertCheckIn(employee_id, attendance_date, check_in_time);
+                mgr.attemgr->updateAttendanceStatus(employee_id, attendance_date);
             }
 
             if (ImGui::Button("查询考勤")) {
-                static string query = "SELECT * FROM Attendance";
-                queryResults.push_back(QueryResult(query, "Attendance", std::move(mgr.attemgr->executeQuery(query.c_str()))));
+                static std::string query = "SELECT * FROM AttendanceStatus";
+                if (curLoginUser.role == "user")
+                    query = "SELECT * FROM AttendanceStatus WHERE employee_id = " + to_string(curLoginUser.employeeId);
+                queryResults.push_back(QueryResult(query, "AttendanceStatus", std::move(mgr.attemgr->executeQuery(query.c_str()))));
             }
         }
 
@@ -352,6 +368,10 @@ void ShowMenu() {
 
             if (ImGui::Button("发布")) {
                 mgr.traimgr->addTrainingCourse(course_name, description);
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("随机生成")) {
+                mgr.traimgr->generateRandomTrainingCourses(10);
             }
 
             if (ImGui::Button("查询##4")) {
