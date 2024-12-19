@@ -184,23 +184,59 @@ public:
     }
 
     void createOnboardingTasks(int employee_id) {
-        try {
-            sql::PreparedStatement* pstmt = tsql.con->prepareStatement("INSERT INTO OnboardingTasks (employee_id, task_description, due_date) VALUES (?, 'Complete onboarding training', ?)");
-            pstmt->setInt(1, employee_id);
-            pstmt->setString(2, "2024-09-30");
-            pstmt->execute();
+        std::vector<std::string> tasks = {
+            "填写个人信息表",
+            "参加入职培训",
+            "领用办公设备",
+            "签署保密协议",
+            "完成公司文化培训",
+            "与团队进行首次会议",
+            "完成系统访问权限设置",
+            "进行安全培训",
+            "加入公司内部沟通平台"
+        };
 
-            pstmt = tsql.con->prepareStatement("INSERT INTO OnboardingTasks (employee_id, task_description, due_date) VALUES (?, 'Receive office equipment', ?)");
-            pstmt->setInt(1, employee_id);
-            pstmt->setString(2, "2024-09-30");
-            pstmt->execute();
+        // 设置随机数生成器
+        std::random_device rd;
+        std::mt19937 gen(rd());
+        std::uniform_int_distribution<> dis(0, tasks.size() - 1);
 
-            delete pstmt;
-        } catch (sql::SQLException& e) {
-            LOGE("Error in createOnboardingTasks: %s", e.what());
+        // 生成任务数量（假设每个员工有5-7个任务）
+        std::uniform_int_distribution<> num_tasks(5, 7);
+        int task_count = num_tasks(gen);
+
+        // 获取当前日期并随机设置到期日期
+        time_t now = time(0);
+        tm *ltm = localtime(&now);
+
+        for (int i = 0; i < task_count; ++i) {
+            // 随机选择一个任务
+            std::string task = tasks[dis(gen)];
+
+            // 随机设置到期日期（假设任务将在1到7天内到期）
+            int due_days = std::uniform_int_distribution<>(1, 7)(gen);
+            ltm->tm_mday += due_days; // 设定任务到期日
+            mktime(ltm);  // 修正日期
+
+            char due_date[11]; // 格式：YYYY-MM-DD
+            strftime(due_date, sizeof(due_date), "%Y-%m-%d", ltm);
+
+            // 将任务插入数据库
+            try {
+                sql::PreparedStatement* pstmt = tsql.con->prepareStatement(
+                    "INSERT INTO OnboardingTasks (employee_id, task_description, due_date, completed) VALUES (?, ?, ?, ?)"
+                );
+                pstmt->setInt(1, employee_id);
+                pstmt->setString(2, task);
+                pstmt->setString(3, due_date);
+                pstmt->setBoolean(4, false); // 默认任务未完成
+                pstmt->execute();
+                delete pstmt;
+            } catch (sql::SQLException& e) {
+                LOGE("Error in createOnboardingTasks: %s", e.what());
+            }
         }
     }
-
 
     void generateRandomJobPosts(int numPosts = 5) {
 

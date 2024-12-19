@@ -48,7 +48,8 @@ void ShowMenu() {
                 mgr.emplmgr->addEmployee(name, id_card, contact, address, position, department, hire_date, education_background, work_experience, emergency_contact);
             }
             if (ImGui::Button("随机添加")) {
-                mgr.emplmgr->GenerateRandomEmployeeData();
+                for (int i = 0; i < 100; i++)
+                    mgr.emplmgr->GenerateRandomEmployeeData();
             }
         }
 
@@ -126,7 +127,18 @@ void ShowMenu() {
 
         if (curLoginUser.role == "user") {
             if (ImGui::Button("查看入职任务")) {
-                static string query = "SELECT * FROM OnboardingTasks WHERE id = " + to_string(curLoginUser.employeeId);
+                static string query = R"(
+                    SELECT OnboardingTasks.id, OnboardingTasks.employee_id, Employees.name, OnboardingTasks.task_description, OnboardingTasks.due_date, OnboardingTasks.completed
+                    FROM OnboardingTasks
+                    INNER JOIN Employees ON OnboardingTasks.employee_id = Employees.id
+                )";
+                if (curLoginUser.role == "user") {
+                    query = R"(
+                        SELECT OnboardingTasks.id, OnboardingTasks.employee_id, Employees.name, OnboardingTasks.task_description, OnboardingTasks.due_date, OnboardingTasks.completed
+                        FROM OnboardingTasks
+                        INNER JOIN Employees ON OnboardingTasks.employee_id = Employees.id
+                        WHERE OnboardingTasks.employee_id = )" + to_string(curLoginUser.employeeId);
+                }
                 queryResults.push_back(QueryResult(query, "OnboardingTasks", std::move(mgr.recumgr->executeQuery(query.c_str()))));
             }
         } else {
@@ -255,9 +267,6 @@ void ShowMenu() {
                         WHERE AttendanceStatus.employee_id = )" + to_string(curLoginUser.employeeId);
                 }
 
-                // static std::string query = "SELECT * FROM AttendanceStatus";
-                // if (curLoginUser.role == "user")
-                //     query = "SELECT * FROM AttendanceStatus WHERE employee_id = " + to_string(curLoginUser.employeeId);
                 queryResults.push_back(QueryResult(query, "AttendanceStatus", std::move(mgr.attemgr->executeQuery(query.c_str()))));
             }
         }
@@ -297,8 +306,10 @@ void ShowMenu() {
             ImGui::InputText("月份 (YYYY-MM)", month, sizeof(month));
             ImGui::InputDouble("工资", &amount);
 
-            if (ImGui::Button("生成")) {
-                mgr.payrmgr->generatePayroll(employee_id, month, amount);
+            if (curLoginUser.role == "admin") {
+                if (ImGui::Button("生成")) {
+                    mgr.payrmgr->generatePayroll(employee_id, month, amount);
+                }
             }
 
             if (ImGui::Button("查询##3")) {
@@ -385,17 +396,19 @@ void ShowMenu() {
         ImGui::Indent(30.0f);
 
         if (ImGui::CollapsingHeader("培训课程管理")) {
-            static char course_name[128];
-            static char description[256];
-            ImGui::InputText("课程名称", course_name, sizeof(course_name));
-            ImGui::InputTextMultiline("描述", description, sizeof(description), ImVec2(0.0f, 100.0f));
+            if (curLoginUser.role == "admin") {
+                static char course_name[128];
+                static char description[256];
+                ImGui::InputText("课程名称", course_name, sizeof(course_name));
+                ImGui::InputTextMultiline("描述", description, sizeof(description), ImVec2(0.0f, 100.0f));
 
-            if (ImGui::Button("发布")) {
-                mgr.traimgr->addTrainingCourse(course_name, description);
-            }
-            ImGui::SameLine();
-            if (ImGui::Button("随机生成")) {
-                mgr.traimgr->generateRandomTrainingCourses(10);
+                if (ImGui::Button("发布")) {
+                    mgr.traimgr->addTrainingCourse(course_name, description);
+                }
+                ImGui::SameLine();
+                if (ImGui::Button("随机生成")) {
+                    mgr.traimgr->generateRandomTrainingCourses(10);
+                }
             }
 
             if (ImGui::Button("查询##4")) {

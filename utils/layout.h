@@ -103,7 +103,7 @@ struct QueryResult {
     std::string tableName;           // 表名
     std::unique_ptr<sql::ResultSet> resultSet; // 查询结果
     bool bTabOpen;                   // 默认 Tab 打开
-    bool bUpdated;                   // 是否需要更新的标志
+    bool bUpdated;                   // 是否需要更新
 
     QueryResult(const std::string& q, const std::string& t, std::unique_ptr<sql::ResultSet> res)
         : query(q), tableName(t), resultSet(std::move(res)), bTabOpen(true), bUpdated(false) {}
@@ -329,26 +329,26 @@ void RenderDataAnalysisPanel(DataAnalysisManager* analysisManager) {
     ImGui::Begin("数据分析");
 
     // 员工出勤情况分析
-    if (ImGui::CollapsingHeader("员工出勤情况分析")) {
-        auto attendanceData = analysisManager->getAttendanceAnalysis();
-        std::vector<const char*> names;
-        std::vector<int> totalCounts;
-        std::vector<int> lateCounts;
+    // if (ImGui::CollapsingHeader("员工出勤情况分析")) {
+    //     auto attendanceData = analysisManager->getAttendanceAnalysis();
+    //     std::vector<const char*> names;
+    //     std::vector<int> totalCounts;
+    //     std::vector<int> lateCounts;
 
-        for (auto& data : attendanceData) {
-            names.push_back(std::get<0>(data).c_str());
-            totalCounts.push_back(std::get<1>(data));
-            lateCounts.push_back(std::get<2>(data));
-        }
+    //     for (auto& data : attendanceData) {
+    //         names.push_back(std::get<0>(data).c_str());
+    //         totalCounts.push_back(std::get<1>(data));
+    //         lateCounts.push_back(std::get<2>(data));
+    //     }
 
-        // 绘制条形图显示员工出勤情况
-        ImGui::Text("员工出勤情况");
-        if (ImPlot::BeginPlot("出勤情况", "员工", "出勤天数")) {
-            ImPlot::PlotBars("总出勤", totalCounts.data(), totalCounts.size(), 0.5f);
-            ImPlot::PlotBars("迟到", lateCounts.data(), lateCounts.size(), 0.5f);
-            ImPlot::EndPlot();
-        }
-    }
+    //     // 绘制条形图显示员工出勤情况
+    //     ImGui::Text("员工出勤情况");
+    //     if (ImPlot::BeginPlot("出勤情况", "员工", "出勤天数")) {
+    //         ImPlot::PlotBars("总出勤", totalCounts.data(), totalCounts.size(), 0.5f);
+    //         ImPlot::PlotBars("迟到", lateCounts.data(), lateCounts.size(), 0.5f);
+    //         ImPlot::EndPlot();
+    //     }
+    // }
 
     // 报销情况分析
     if (ImGui::CollapsingHeader("报销情况分析")) {

@@ -2,6 +2,9 @@
 #ifndef LOGIN_MENU_H
 #define LOGIN_MENU_H
 
+extern struct QueryResult;
+extern std::vector<QueryResult> queryResults;  // 用来存储查询结果
+
 struct User {
     std::string username;
     std::string role;
@@ -128,6 +131,7 @@ void RenderLoginWindow() {
                 isLoggedIn = true;
                 loggedInUser = user;
                 curLoginUser = user;
+                queryResults.clear();
             } else {
                 loginMessage = "登陆失败! 错误的用户名或密码.";
             }
